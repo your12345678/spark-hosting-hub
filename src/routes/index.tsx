@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import logo from "@/assets/sparkhosting-logo.png";
 import hero3d from "@/assets/hero-3d.jpg";
 import server3d from "@/assets/server-3d.png";
 import minecraft3d from "@/assets/minecraft-3d.png";
 import vps3d from "@/assets/vps-3d.png";
-import { Cpu, HardDrive, Zap, Shield, Globe, Headphones, Check, Rocket, Server, Gamepad2, Flame } from "lucide-react";
+import { Cpu, HardDrive, Zap, Shield, Globe, Headphones, Check, Rocket, Server, Gamepad2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -76,15 +77,17 @@ const vpsPlans = [
 
 function Wordmark({ size = "text-lg" }: { size?: string }) {
   return (
-    <a href="#" className="flex items-center gap-2.5">
-      <span className="relative grid place-items-center w-10 h-10 rounded-xl bg-gradient-spark shadow-spark">
-        <Flame className="w-5 h-5 text-primary-foreground" />
-      </span>
+    <a href="#" className="flex items-center gap-2.5 group">
+      <img
+        src={logo}
+        alt="SparkHosting"
+        className="h-11 w-11 object-contain drop-shadow-[0_0_18px_rgba(217,70,239,0.7)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[6deg]"
+      />
       <div className="leading-tight">
-        <div className={`font-display font-bold ${size}`}>
+        <div className={`font-display font-bold ${size} tracking-tight`}>
           Spark<span className="text-gradient-spark">Hosting</span>
         </div>
-        <div className="text-[10px] uppercase tracking-[0.2em] text-primary">System Active</div>
+        <div className="text-[10px] uppercase tracking-[0.25em] text-primary">System Active</div>
       </div>
     </a>
   );
