@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import logo from "@/assets/sparkhosting-logo.png";
 import hero3d from "@/assets/hero-3d.jpg";
-import { Cpu, HardDrive, Zap, Shield, Globe, Headphones, Check, Rocket, Server, Gamepad2 } from "lucide-react";
+import server3d from "@/assets/server-3d.png";
+import minecraft3d from "@/assets/minecraft-3d.png";
+import vps3d from "@/assets/vps-3d.png";
+import { Cpu, HardDrive, Zap, Shield, Globe, Headphones, Check, Rocket, Server, Gamepad2, Flame } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -72,19 +74,29 @@ const vpsPlans = [
   { name: "Spark VPS 16", price: "₹2,899", ram: "32 GB", cpu: "16 vCPU", storage: "480 GB NVMe", bw: "20 TB" },
 ];
 
+function Wordmark({ size = "text-lg" }: { size?: string }) {
+  return (
+    <a href="#" className="flex items-center gap-2.5">
+      <span className="relative grid place-items-center w-10 h-10 rounded-xl bg-gradient-spark shadow-spark">
+        <Flame className="w-5 h-5 text-primary-foreground" />
+      </span>
+      <div className="leading-tight">
+        <div className={`font-display font-bold ${size}`}>
+          Spark<span className="text-gradient-spark">Hosting</span>
+        </div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-primary">System Active</div>
+      </div>
+    </a>
+  );
+}
+
 function Index() {
   return (
     <div className="min-h-screen text-foreground">
       {/* NAV */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/40 border-b border-border">
         <div className="mx-auto max-w-7xl px-6 h-20 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-3">
-            <img src={logo} alt="SparkHosting" className="h-10 w-10 rounded-xl shadow-glow" />
-            <div className="leading-tight">
-              <div className="font-display font-bold text-lg">SparkHosting</div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-primary">System Active</div>
-            </div>
-          </a>
+          <Wordmark />
           <nav className="hidden lg:flex items-center gap-8 text-sm text-muted-foreground">
             {nav.map((n) => (
               <a key={n} href={`#${n.toLowerCase()}`} className="hover:text-foreground transition-colors">{n}</a>
@@ -133,16 +145,37 @@ function Index() {
             </div>
           </div>
 
-          {/* 3D logo showcase */}
-          <div className="relative h-[500px] flex items-center justify-center">
+          {/* 3D server showcase */}
+          <div className="relative h-[520px] flex items-center justify-center">
             <div className="absolute inset-0 rounded-[3rem] overflow-hidden card-3d">
-              <img src={hero3d} alt="" className="w-full h-full object-cover opacity-70" width={1536} height={1024} />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+              <img src={hero3d} alt="" className="w-full h-full object-cover opacity-40" width={1536} height={1024} />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
             </div>
             <img
-              src={logo}
-              alt="SparkHosting Logo"
-              className="relative z-10 w-72 h-72 object-contain animate-float animate-pulse-glow drop-shadow-2xl"
+              src={server3d}
+              alt="3D server rack"
+              width={1024}
+              height={1024}
+              className="relative z-10 w-[420px] h-[420px] object-contain animate-float drop-shadow-[0_30px_60px_rgba(217,70,239,0.5)]"
+            />
+            {/* floating accents */}
+            <img
+              src={minecraft3d}
+              alt=""
+              width={1024}
+              height={1024}
+              loading="lazy"
+              className="absolute z-20 w-32 h-32 object-contain -bottom-2 -left-2 animate-float"
+              style={{ animationDelay: "1s" }}
+            />
+            <img
+              src={vps3d}
+              alt=""
+              width={1024}
+              height={1024}
+              loading="lazy"
+              className="absolute z-20 w-32 h-32 object-contain -top-4 -right-2 animate-float"
+              style={{ animationDelay: "2s" }}
             />
           </div>
         </div>
@@ -169,14 +202,22 @@ function Index() {
 
       {/* MINECRAFT PLANS */}
       <section id="minecraft" className="mx-auto max-w-7xl px-6 py-24">
-        <div className="flex items-end justify-between flex-wrap gap-6 mb-14">
+        <div className="grid lg:grid-cols-[1fr_auto] items-end gap-10 mb-14">
           <div>
             <div className="text-xs uppercase tracking-[0.3em] text-primary mb-3 flex items-center gap-2">
               <Gamepad2 className="w-4 h-4" /> Minecraft Hosting
             </div>
             <h2 className="text-4xl md:text-5xl font-bold">Pick your <span className="text-gradient-spark">realm</span>.</h2>
+            <p className="text-muted-foreground max-w-md mt-4">All plans include unlimited NVMe SSD bandwidth, free modpack installer, and instant setup.</p>
           </div>
-          <p className="text-muted-foreground max-w-md">All plans include unlimited NVMe SSD bandwidth, free modpack installer, and instant setup.</p>
+          <img
+            src={minecraft3d}
+            alt="3D Minecraft block"
+            width={1024}
+            height={1024}
+            loading="lazy"
+            className="w-48 h-48 object-contain animate-float drop-shadow-[0_20px_40px_rgba(217,70,239,0.5)] hidden lg:block"
+          />
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -192,7 +233,7 @@ function Index() {
               )}
               <div className="flex items-center justify-between mb-6">
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">{!p.popular && p.tag}</div>
-                <Server className="w-5 h-5 text-primary" />
+                <img src={minecraft3d} alt="" width={1024} height={1024} loading="lazy" className="w-14 h-14 object-contain" />
               </div>
               <h3 className="text-3xl font-bold mb-1">{p.name}</h3>
               <div className="flex items-baseline gap-1 mb-6">
@@ -222,7 +263,15 @@ function Index() {
 
       {/* VPS PLANS */}
       <section id="vps" className="mx-auto max-w-7xl px-6 py-24">
-        <div className="flex items-end justify-between flex-wrap gap-6 mb-14">
+        <div className="grid lg:grid-cols-[auto_1fr] items-end gap-10 mb-14">
+          <img
+            src={vps3d}
+            alt="3D VPS chip"
+            width={1024}
+            height={1024}
+            loading="lazy"
+            className="w-48 h-48 object-contain animate-float drop-shadow-[0_20px_40px_rgba(217,70,239,0.5)] hidden lg:block"
+          />
           <div>
             <div className="text-xs uppercase tracking-[0.3em] text-primary mb-3 flex items-center gap-2">
               <Server className="w-4 h-4" /> Cloud VPS
@@ -232,19 +281,20 @@ function Index() {
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {vpsPlans.map((v) => (
-            <div key={v.name} className="card-3d rounded-2xl p-6">
-              <div className="text-xs uppercase tracking-widest text-primary mb-2">{v.name}</div>
-              <div className="flex items-baseline gap-1 mb-6">
+            <div key={v.name} className="card-3d rounded-2xl p-6 relative overflow-hidden">
+              <img src={vps3d} alt="" width={1024} height={1024} loading="lazy" className="absolute -right-6 -top-6 w-28 h-28 object-contain opacity-40" />
+              <div className="text-xs uppercase tracking-widest text-primary mb-2 relative">{v.name}</div>
+              <div className="flex items-baseline gap-1 mb-6 relative">
                 <span className="text-3xl font-bold">{v.price}</span>
                 <span className="text-xs text-muted-foreground">/mo</span>
               </div>
-              <div className="space-y-3 text-sm">
+              <div className="space-y-3 text-sm relative">
                 <Row label="RAM" value={v.ram} />
                 <Row label="CPU" value={v.cpu} />
                 <Row label="Storage" value={v.storage} />
                 <Row label="Bandwidth" value={v.bw} />
               </div>
-              <button className="mt-6 w-full h-11 rounded-full text-sm font-semibold border border-border hover:border-primary hover:bg-primary/5 transition">
+              <button className="mt-6 w-full h-11 rounded-full text-sm font-semibold border border-border hover:border-primary hover:bg-primary/5 transition relative">
                 Configure
               </button>
             </div>
@@ -255,7 +305,8 @@ function Index() {
       {/* CTA */}
       <section className="mx-auto max-w-7xl px-6 py-24">
         <div className="card-3d rounded-[2.5rem] p-12 md:p-20 text-center relative overflow-hidden">
-          <img src={logo} alt="" className="absolute -right-20 -top-20 w-[400px] opacity-20 blur-sm" />
+          <img src={server3d} alt="" width={1024} height={1024} loading="lazy" className="absolute -right-16 -top-10 w-[360px] opacity-30 blur-[1px] animate-float" />
+          <img src={minecraft3d} alt="" width={1024} height={1024} loading="lazy" className="absolute -left-10 bottom-0 w-40 opacity-50 animate-float" style={{ animationDelay: "1.5s" }} />
           <h2 className="text-4xl md:text-6xl font-bold mb-6 relative">Ready to <span className="text-gradient-spark">spark</span> your server?</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-10 relative">Join 8,000+ creators running their worlds on SparkHosting infrastructure.</p>
           <button className="relative h-14 px-10 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark hover:scale-105 transition inline-flex items-center gap-2">
@@ -268,8 +319,7 @@ function Index() {
       <footer className="border-t border-border">
         <div className="mx-auto max-w-7xl px-6 py-10 flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="" className="h-7 w-7" />
-            <span>© {new Date().getFullYear()} SparkHosting. All rights reserved.</span>
+            <Wordmark size="text-base" />
           </div>
           <div className="flex gap-6">
             <a href="#" className="hover:text-foreground">Status</a>
@@ -277,6 +327,7 @@ function Index() {
             <a href="#" className="hover:text-foreground">Terms</a>
             <a href="#" className="hover:text-foreground">Privacy</a>
           </div>
+          <div>© {new Date().getFullYear()} SparkHosting. All rights reserved.</div>
         </div>
       </footer>
     </div>
