@@ -149,26 +149,30 @@ function Index() {
           </div>
 
           {/* 3D server showcase */}
-          <div className="relative h-[520px] flex items-center justify-center">
+          <div className="relative h-[520px] flex items-center justify-center perspective-scene">
             <div className="absolute inset-0 rounded-[3rem] overflow-hidden card-3d">
               <img src={hero3d} alt="" className="w-full h-full object-cover opacity-40" width={1536} height={1024} />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
             </div>
+            {/* glowing platform under the rack */}
+            <div className="absolute bottom-12 w-[340px] h-[340px] rounded-full bg-gradient-spark opacity-30 blur-3xl" />
+            <div className="absolute bottom-16 w-[280px] h-6 rounded-[50%] bg-primary/40 blur-2xl" />
+
             <img
               src={server3d}
               alt="3D server rack"
               width={1024}
               height={1024}
-              className="relative z-10 w-[420px] h-[420px] object-contain animate-float drop-shadow-[0_30px_60px_rgba(217,70,239,0.5)]"
+              className="relative z-10 w-[440px] h-[440px] object-contain animate-pulse-glow"
+              style={{ transform: "rotateX(6deg) rotateY(-10deg)", transformStyle: "preserve-3d" }}
             />
-            {/* floating accents */}
             <img
               src={minecraft3d}
               alt=""
               width={1024}
               height={1024}
               loading="lazy"
-              className="absolute z-20 w-32 h-32 object-contain -bottom-2 -left-2 animate-float"
+              className="absolute z-20 w-36 h-36 object-contain bottom-2 -left-4 animate-float-tilt drop-shadow-[0_20px_40px_rgba(217,70,239,0.55)]"
               style={{ animationDelay: "1s" }}
             />
             <img
@@ -177,7 +181,7 @@ function Index() {
               width={1024}
               height={1024}
               loading="lazy"
-              className="absolute z-20 w-32 h-32 object-contain -top-4 -right-2 animate-float"
+              className="absolute z-20 w-36 h-36 object-contain top-2 -right-4 animate-float drop-shadow-[0_20px_40px_rgba(217,70,239,0.55)]"
               style={{ animationDelay: "2s" }}
             />
           </div>
