@@ -166,13 +166,47 @@ function Index() {
               className="relative z-10 w-[440px] h-[440px] object-contain animate-pulse-glow"
               style={{ transform: "rotateX(6deg) rotateY(-10deg)", transformStyle: "preserve-3d" }}
             />
+            {/* Orbit rings */}
+            <div className="absolute inset-0 grid place-items-center pointer-events-none">
+              <div className="w-[420px] h-[420px] rounded-full border border-primary/20 animate-[spin_40s_linear_infinite]" />
+            </div>
+            <div className="absolute inset-0 grid place-items-center pointer-events-none">
+              <div className="w-[560px] h-[560px] rounded-full border border-primary/10 animate-[spin_60s_linear_reverse_infinite]" />
+            </div>
+
+            {/* Orbiting 3D accents */}
+            {[
+              { Icon: Cpu, r: 210, dur: 18, delay: 0, dir: "normal" },
+              { Icon: Shield, r: 210, dur: 18, delay: -6, dir: "normal" },
+              { Icon: Zap, r: 210, dur: 18, delay: -12, dir: "normal" },
+              { Icon: Globe, r: 280, dur: 28, delay: -4, dir: "reverse" },
+              { Icon: HardDrive, r: 280, dur: 28, delay: -18, dir: "reverse" },
+            ].map(({ Icon, r, dur, delay, dir }, i) => (
+              <div
+                key={i}
+                className="absolute top-1/2 left-1/2 z-30 pointer-events-none"
+                style={{
+                  width: 0,
+                  height: 0,
+                  ["--orbit-r" as string]: `${r}px`,
+                  animation: `orbit ${dur}s linear infinite ${dir}`,
+                  animationDelay: `${delay}s`,
+                }}
+              >
+                <div className="-translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-2xl glass-pane grid place-items-center shadow-spark">
+                  <Icon className="w-6 h-6 text-primary drop-shadow-[0_0_10px_rgba(217,70,239,0.9)]" />
+                </div>
+              </div>
+            ))}
+
+            {/* Foreground 3D blocks */}
             <img
               src={minecraft3d}
               alt=""
               width={1024}
               height={1024}
               loading="lazy"
-              className="absolute z-20 w-36 h-36 object-contain bottom-2 -left-4 animate-float-tilt drop-shadow-[0_20px_40px_rgba(217,70,239,0.55)]"
+              className="absolute z-40 w-32 h-32 object-contain bottom-0 -left-2 animate-float-tilt drop-shadow-[0_20px_40px_rgba(217,70,239,0.55)]"
               style={{ animationDelay: "1s" }}
             />
             <img
@@ -181,7 +215,7 @@ function Index() {
               width={1024}
               height={1024}
               loading="lazy"
-              className="absolute z-20 w-36 h-36 object-contain top-2 -right-4 animate-float drop-shadow-[0_20px_40px_rgba(217,70,239,0.55)]"
+              className="absolute z-40 w-32 h-32 object-contain top-0 -right-2 animate-float drop-shadow-[0_20px_40px_rgba(217,70,239,0.55)]"
               style={{ animationDelay: "2s" }}
             />
           </div>
