@@ -306,41 +306,46 @@ function Index() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
+          {minecraftPlans.length === 0 && (
+            <div className="col-span-full text-center text-muted-foreground text-sm py-10">
+              No Minecraft plans yet. Add some from the admin panel.
+            </div>
+          )}
           {minecraftPlans.map((p) => (
             <div
-              key={p.name}
-              className={`card-3d rounded-3xl p-8 relative ${p.popular ? "glow-ring" : ""}`}
+              key={p.id}
+              className={`card-3d rounded-3xl p-8 relative ${p.is_featured ? "glow-ring" : ""}`}
             >
-              {p.popular && (
+              {p.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-spark text-primary-foreground text-[10px] font-bold uppercase tracking-widest shadow-spark">
-                  {p.tag}
+                  {p.badge}
                 </div>
               )}
               <div className="flex items-center justify-between mb-6">
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">{!p.popular && p.tag}</div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">{p.tagline}</div>
                 <img src={minecraft3d} alt="" width={1024} height={1024} loading="lazy" className="w-14 h-14 object-contain" />
               </div>
               <h3 className="text-3xl font-bold mb-1">{p.name}</h3>
               <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-5xl font-bold text-gradient-spark">{p.price}</span>
-                <span className="text-sm text-muted-foreground">/mo</span>
+                <span className="text-5xl font-bold text-gradient-spark">{formatPrice(p.price_cents, p.currency)}</span>
+                <span className="text-sm text-muted-foreground">/{p.billing_period}</span>
               </div>
               <ul className="space-y-3 mb-8 text-sm">
-                <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Memory</span><span className="font-semibold">{p.ram}</span></li>
-                <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">CPU</span><span className="font-semibold">{p.cpu}</span></li>
-                <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Storage</span><span className="font-semibold">{p.storage}</span></li>
-                <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Slots</span><span className="font-semibold">{p.slots}</span></li>
+                {p.ram_gb != null && <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Memory</span><span className="font-semibold">{p.ram_gb} GB</span></li>}
+                {p.cpu_cores != null && <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">CPU</span><span className="font-semibold">{p.cpu_cores} cores{p.cpu_label ? ` (${p.cpu_label})` : ""}</span></li>}
+                {p.storage_gb != null && <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Storage</span><span className="font-semibold">{p.storage_gb} GB {p.storage_type ?? ""}</span></li>}
+                {p.player_slots != null && <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Slots</span><span className="font-semibold">{p.player_slots} players</span></li>}
               </ul>
               <ul className="space-y-2 mb-8">
-                {p.features.map((f) => (
+                {(p.features ?? []).map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
                     <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
-              <button className={`w-full h-12 rounded-full font-semibold transition ${p.popular ? "bg-gradient-spark text-primary-foreground shadow-spark hover:scale-[1.02]" : "border border-border hover:border-primary"}`}>
-                Deploy {p.name}
-              </button>
+              <a href={p.cta_url ?? "#"} className={`w-full h-12 rounded-full font-semibold transition flex items-center justify-center ${p.is_featured ? "bg-gradient-spark text-primary-foreground shadow-spark hover:scale-[1.02]" : "border border-border hover:border-primary"}`}>
+                {p.cta_label ?? `Deploy ${p.name}`}
+              </a>
             </div>
           ))}
         </div>
