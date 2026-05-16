@@ -107,7 +107,7 @@ const vpsPlans = [
 
 function Wordmark({ size = "text-lg" }: { size?: string }) {
   return (
-    <a href="#" className="flex items-center gap-2.5 group">
+    <Link to="/" className="flex items-center gap-2.5 group">
       <img
         src={logo}
         alt="SparkHosting"
@@ -119,11 +119,25 @@ function Wordmark({ size = "text-lg" }: { size?: string }) {
         </div>
         <div className="text-[10px] uppercase tracking-[0.25em] text-primary">System Active</div>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function Index() {
+  const { user, isAdmin } = useAuth();
+  const [plans, setPlans] = useState<DbPlan[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("plans")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order")
+      .then(({ data }) => setPlans((data ?? []) as any));
+  }, []);
+
+  const minecraftPlans = plans.filter((p) => p.category === "minecraft");
+  const vpsPlans = plans.filter((p) => p.category !== "minecraft");
   return (
     <div className="min-h-screen text-foreground">
       {/* NAV */}
