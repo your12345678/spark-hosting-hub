@@ -14,16 +14,130 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      plans: {
+        Row: {
+          badge: string | null
+          bandwidth_tb: number | null
+          billing_period: string
+          category: Database["public"]["Enums"]["plan_category"]
+          color: string | null
+          cpu_cores: number | null
+          cpu_label: string | null
+          created_at: string
+          cta_label: string | null
+          cta_url: string | null
+          currency: string
+          features: Json
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          location: string | null
+          name: string
+          player_slots: number | null
+          price_cents: number
+          ram_gb: number | null
+          sort_order: number
+          storage_gb: number | null
+          storage_type: string | null
+          tagline: string | null
+          updated_at: string
+        }
+        Insert: {
+          badge?: string | null
+          bandwidth_tb?: number | null
+          billing_period?: string
+          category: Database["public"]["Enums"]["plan_category"]
+          color?: string | null
+          cpu_cores?: number | null
+          cpu_label?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          currency?: string
+          features?: Json
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          location?: string | null
+          name: string
+          player_slots?: number | null
+          price_cents?: number
+          ram_gb?: number | null
+          sort_order?: number
+          storage_gb?: number | null
+          storage_type?: string | null
+          tagline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          badge?: string | null
+          bandwidth_tb?: number | null
+          billing_period?: string
+          category?: Database["public"]["Enums"]["plan_category"]
+          color?: string | null
+          cpu_cores?: number | null
+          cpu_label?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          currency?: string
+          features?: Json
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          location?: string | null
+          name?: string
+          player_slots?: number | null
+          price_cents?: number
+          ram_gb?: number | null
+          sort_order?: number
+          storage_gb?: number | null
+          storage_type?: string | null
+          tagline?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      plan_category: "minecraft" | "budget" | "paid" | "premium" | "vps"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +264,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      plan_category: ["minecraft", "budget", "paid", "premium", "vps"],
+    },
   },
 } as const
