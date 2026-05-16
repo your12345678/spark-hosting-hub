@@ -134,7 +134,7 @@ function AdminPage() {
   }
 
   async function toggleField(id: string, field: "is_active" | "is_featured", value: boolean) {
-    const { error } = await supabase.from("plans").update({ [field]: value }).eq("id", id);
+    const { error } = await supabase.from("plans").update({ [field]: value } as any).eq("id", id);
     if (error) return toast.error(error.message);
     refresh();
   }
