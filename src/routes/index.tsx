@@ -150,10 +150,17 @@ function Index() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <button className="hidden sm:inline-flex h-10 px-5 rounded-full text-sm font-medium border border-border hover:border-primary transition">Login</button>
-            <button className="h-10 px-5 rounded-full text-sm font-semibold bg-gradient-spark text-primary-foreground shadow-spark hover:scale-105 transition">
+            {isAdmin && (
+              <Link to="/admin" className="hidden sm:inline-flex h-10 px-4 rounded-full text-sm font-medium border border-primary/40 text-primary hover:bg-primary/10 transition items-center gap-1.5">
+                <Settings className="w-4 h-4" /> Admin
+              </Link>
+            )}
+            <Link to="/auth" className="hidden sm:inline-flex h-10 px-5 rounded-full text-sm font-medium border border-border hover:border-primary transition items-center">
+              {user ? "Account" : "Login"}
+            </Link>
+            <a href="#minecraft" className="h-10 px-5 rounded-full text-sm font-semibold bg-gradient-spark text-primary-foreground shadow-spark hover:scale-105 transition inline-flex items-center">
               Get Started
-            </button>
+            </a>
           </div>
         </div>
       </header>
