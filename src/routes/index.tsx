@@ -1,10 +1,40 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import logo from "@/assets/sparkhosting-logo.png";
 import hero3d from "@/assets/hero-3d.jpg";
 import server3d from "@/assets/server-3d.png";
 import minecraft3d from "@/assets/minecraft-3d.png";
 import vps3d from "@/assets/vps-3d.png";
-import { Cpu, HardDrive, Zap, Shield, Globe, Headphones, Check, Rocket, Server, Gamepad2 } from "lucide-react";
+import { Cpu, HardDrive, Zap, Shield, Globe, Headphones, Check, Rocket, Server, Gamepad2, Settings } from "lucide-react";
+
+type DbPlan = {
+  id: string;
+  category: "minecraft" | "budget" | "paid" | "premium" | "vps";
+  name: string;
+  tagline: string | null;
+  price_cents: number;
+  currency: string;
+  billing_period: string;
+  ram_gb: number | null;
+  cpu_cores: number | null;
+  cpu_label: string | null;
+  storage_gb: number | null;
+  storage_type: string | null;
+  bandwidth_tb: number | null;
+  player_slots: number | null;
+  features: string[];
+  badge: string | null;
+  cta_label: string | null;
+  cta_url: string | null;
+  is_featured: boolean;
+};
+
+function formatPrice(cents: number, currency: string) {
+  const sym = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "INR" ? "₹" : `${currency} `;
+  return `${sym}${(cents / 100).toFixed(2)}`;
+}
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -77,7 +107,7 @@ const vpsPlans = [
 
 function Wordmark({ size = "text-lg" }: { size?: string }) {
   return (
-    <a href="#" className="flex items-center gap-2.5 group">
+    <Link to="/" className="flex items-center gap-2.5 group">
       <img
         src={logo}
         alt="SparkHosting"
@@ -89,11 +119,25 @@ function Wordmark({ size = "text-lg" }: { size?: string }) {
         </div>
         <div className="text-[10px] uppercase tracking-[0.25em] text-primary">System Active</div>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function Index() {
+  const { user, isAdmin } = useAuth();
+  const [plans, setPlans] = useState<DbPlan[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("plans")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order")
+      .then(({ data }) => setPlans((data ?? []) as any));
+  }, []);
+
+  const minecraftPlans = plans.filter((p) => p.category === "minecraft");
+  const vpsPlans = plans.filter((p) => p.category !== "minecraft");
   return (
     <div className="min-h-screen text-foreground">
       {/* NAV */}
@@ -106,10 +150,17 @@ function Index() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <button className="hidden sm:inline-flex h-10 px-5 rounded-full text-sm font-medium border border-border hover:border-primary transition">Login</button>
-            <button className="h-10 px-5 rounded-full text-sm font-semibold bg-gradient-spark text-primary-foreground shadow-spark hover:scale-105 transition">
+            {isAdmin && (
+              <Link to="/admin" className="hidden sm:inline-flex h-10 px-4 rounded-full text-sm font-medium border border-primary/40 text-primary hover:bg-primary/10 transition items-center gap-1.5">
+                <Settings className="w-4 h-4" /> Admin
+              </Link>
+            )}
+            <Link to="/auth" className="hidden sm:inline-flex h-10 px-5 rounded-full text-sm font-medium border border-border hover:border-primary transition items-center">
+              {user ? "Account" : "Login"}
+            </Link>
+            <a href="#minecraft" className="h-10 px-5 rounded-full text-sm font-semibold bg-gradient-spark text-primary-foreground shadow-spark hover:scale-105 transition inline-flex items-center">
               Get Started
-            </button>
+            </a>
           </div>
         </div>
       </header>
@@ -262,41 +313,46 @@ function Index() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
+          {minecraftPlans.length === 0 && (
+            <div className="col-span-full text-center text-muted-foreground text-sm py-10">
+              No Minecraft plans yet. Add some from the admin panel.
+            </div>
+          )}
           {minecraftPlans.map((p) => (
             <div
-              key={p.name}
-              className={`card-3d rounded-3xl p-8 relative ${p.popular ? "glow-ring" : ""}`}
+              key={p.id}
+              className={`card-3d rounded-3xl p-8 relative ${p.is_featured ? "glow-ring" : ""}`}
             >
-              {p.popular && (
+              {p.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-spark text-primary-foreground text-[10px] font-bold uppercase tracking-widest shadow-spark">
-                  {p.tag}
+                  {p.badge}
                 </div>
               )}
               <div className="flex items-center justify-between mb-6">
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">{!p.popular && p.tag}</div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">{p.tagline}</div>
                 <img src={minecraft3d} alt="" width={1024} height={1024} loading="lazy" className="w-14 h-14 object-contain" />
               </div>
               <h3 className="text-3xl font-bold mb-1">{p.name}</h3>
               <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-5xl font-bold text-gradient-spark">{p.price}</span>
-                <span className="text-sm text-muted-foreground">/mo</span>
+                <span className="text-5xl font-bold text-gradient-spark">{formatPrice(p.price_cents, p.currency)}</span>
+                <span className="text-sm text-muted-foreground">/{p.billing_period}</span>
               </div>
               <ul className="space-y-3 mb-8 text-sm">
-                <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Memory</span><span className="font-semibold">{p.ram}</span></li>
-                <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">CPU</span><span className="font-semibold">{p.cpu}</span></li>
-                <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Storage</span><span className="font-semibold">{p.storage}</span></li>
-                <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Slots</span><span className="font-semibold">{p.slots}</span></li>
+                {p.ram_gb != null && <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Memory</span><span className="font-semibold">{p.ram_gb} GB</span></li>}
+                {p.cpu_cores != null && <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">CPU</span><span className="font-semibold">{p.cpu_cores} cores{p.cpu_label ? ` (${p.cpu_label})` : ""}</span></li>}
+                {p.storage_gb != null && <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Storage</span><span className="font-semibold">{p.storage_gb} GB {p.storage_type ?? ""}</span></li>}
+                {p.player_slots != null && <li className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Slots</span><span className="font-semibold">{p.player_slots} players</span></li>}
               </ul>
               <ul className="space-y-2 mb-8">
-                {p.features.map((f) => (
+                {(p.features ?? []).map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
                     <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
-              <button className={`w-full h-12 rounded-full font-semibold transition ${p.popular ? "bg-gradient-spark text-primary-foreground shadow-spark hover:scale-[1.02]" : "border border-border hover:border-primary"}`}>
-                Deploy {p.name}
-              </button>
+              <a href={p.cta_url ?? "#"} className={`w-full h-12 rounded-full font-semibold transition flex items-center justify-center ${p.is_featured ? "bg-gradient-spark text-primary-foreground shadow-spark hover:scale-[1.02]" : "border border-border hover:border-primary"}`}>
+                {p.cta_label ?? `Deploy ${p.name}`}
+              </a>
             </div>
           ))}
         </div>
@@ -321,23 +377,31 @@ function Index() {
           </div>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {vpsPlans.length === 0 && (
+            <div className="col-span-full text-center text-muted-foreground text-sm py-10">
+              No VPS plans yet. Add some from the admin panel.
+            </div>
+          )}
           {vpsPlans.map((v) => (
-            <div key={v.name} className="card-3d rounded-2xl p-6 relative overflow-hidden">
+            <div key={v.id} className="card-3d rounded-2xl p-6 relative overflow-hidden">
               <img src={vps3d} alt="" width={1024} height={1024} loading="lazy" className="absolute -right-6 -top-6 w-28 h-28 object-contain opacity-40" />
-              <div className="text-xs uppercase tracking-widest text-primary mb-2 relative">{v.name}</div>
+              <div className="text-xs uppercase tracking-widest text-primary mb-2 relative flex items-center gap-2">
+                {v.name}
+                {v.badge && <span className="px-2 py-0.5 rounded-full bg-primary/15 text-[9px]">{v.badge}</span>}
+              </div>
               <div className="flex items-baseline gap-1 mb-6 relative">
-                <span className="text-3xl font-bold">{v.price}</span>
-                <span className="text-xs text-muted-foreground">/mo</span>
+                <span className="text-3xl font-bold">{formatPrice(v.price_cents, v.currency)}</span>
+                <span className="text-xs text-muted-foreground">/{v.billing_period}</span>
               </div>
               <div className="space-y-3 text-sm relative">
-                <Row label="RAM" value={v.ram} />
-                <Row label="CPU" value={v.cpu} />
-                <Row label="Storage" value={v.storage} />
-                <Row label="Bandwidth" value={v.bw} />
+                {v.ram_gb != null && <Row label="RAM" value={`${v.ram_gb} GB`} />}
+                {v.cpu_cores != null && <Row label="CPU" value={`${v.cpu_cores} vCPU`} />}
+                {v.storage_gb != null && <Row label="Storage" value={`${v.storage_gb} GB ${v.storage_type ?? ""}`} />}
+                {v.bandwidth_tb != null && <Row label="Bandwidth" value={`${v.bandwidth_tb} TB`} />}
               </div>
-              <button className="mt-6 w-full h-11 rounded-full text-sm font-semibold border border-border hover:border-primary hover:bg-primary/5 transition relative">
-                Configure
-              </button>
+              <a href={v.cta_url ?? "#"} className="mt-6 w-full h-11 rounded-full text-sm font-semibold border border-border hover:border-primary hover:bg-primary/5 transition relative flex items-center justify-center">
+                {v.cta_label ?? "Configure"}
+              </a>
             </div>
           ))}
         </div>
