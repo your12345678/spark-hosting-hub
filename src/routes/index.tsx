@@ -370,23 +370,31 @@ function Index() {
           </div>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {vpsPlans.length === 0 && (
+            <div className="col-span-full text-center text-muted-foreground text-sm py-10">
+              No VPS plans yet. Add some from the admin panel.
+            </div>
+          )}
           {vpsPlans.map((v) => (
-            <div key={v.name} className="card-3d rounded-2xl p-6 relative overflow-hidden">
+            <div key={v.id} className="card-3d rounded-2xl p-6 relative overflow-hidden">
               <img src={vps3d} alt="" width={1024} height={1024} loading="lazy" className="absolute -right-6 -top-6 w-28 h-28 object-contain opacity-40" />
-              <div className="text-xs uppercase tracking-widest text-primary mb-2 relative">{v.name}</div>
+              <div className="text-xs uppercase tracking-widest text-primary mb-2 relative flex items-center gap-2">
+                {v.name}
+                {v.badge && <span className="px-2 py-0.5 rounded-full bg-primary/15 text-[9px]">{v.badge}</span>}
+              </div>
               <div className="flex items-baseline gap-1 mb-6 relative">
-                <span className="text-3xl font-bold">{v.price}</span>
-                <span className="text-xs text-muted-foreground">/mo</span>
+                <span className="text-3xl font-bold">{formatPrice(v.price_cents, v.currency)}</span>
+                <span className="text-xs text-muted-foreground">/{v.billing_period}</span>
               </div>
               <div className="space-y-3 text-sm relative">
-                <Row label="RAM" value={v.ram} />
-                <Row label="CPU" value={v.cpu} />
-                <Row label="Storage" value={v.storage} />
-                <Row label="Bandwidth" value={v.bw} />
+                {v.ram_gb != null && <Row label="RAM" value={`${v.ram_gb} GB`} />}
+                {v.cpu_cores != null && <Row label="CPU" value={`${v.cpu_cores} vCPU`} />}
+                {v.storage_gb != null && <Row label="Storage" value={`${v.storage_gb} GB ${v.storage_type ?? ""}`} />}
+                {v.bandwidth_tb != null && <Row label="Bandwidth" value={`${v.bandwidth_tb} TB`} />}
               </div>
-              <button className="mt-6 w-full h-11 rounded-full text-sm font-semibold border border-border hover:border-primary hover:bg-primary/5 transition relative">
-                Configure
-              </button>
+              <a href={v.cta_url ?? "#"} className="mt-6 w-full h-11 rounded-full text-sm font-semibold border border-border hover:border-primary hover:bg-primary/5 transition relative flex items-center justify-center">
+                {v.cta_label ?? "Configure"}
+              </a>
             </div>
           ))}
         </div>
