@@ -1,10 +1,40 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import logo from "@/assets/sparkhosting-logo.png";
 import hero3d from "@/assets/hero-3d.jpg";
 import server3d from "@/assets/server-3d.png";
 import minecraft3d from "@/assets/minecraft-3d.png";
 import vps3d from "@/assets/vps-3d.png";
-import { Cpu, HardDrive, Zap, Shield, Globe, Headphones, Check, Rocket, Server, Gamepad2 } from "lucide-react";
+import { Cpu, HardDrive, Zap, Shield, Globe, Headphones, Check, Rocket, Server, Gamepad2, Settings } from "lucide-react";
+
+type DbPlan = {
+  id: string;
+  category: "minecraft" | "budget" | "paid" | "premium" | "vps";
+  name: string;
+  tagline: string | null;
+  price_cents: number;
+  currency: string;
+  billing_period: string;
+  ram_gb: number | null;
+  cpu_cores: number | null;
+  cpu_label: string | null;
+  storage_gb: number | null;
+  storage_type: string | null;
+  bandwidth_tb: number | null;
+  player_slots: number | null;
+  features: string[];
+  badge: string | null;
+  cta_label: string | null;
+  cta_url: string | null;
+  is_featured: boolean;
+};
+
+function formatPrice(cents: number, currency: string) {
+  const sym = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "INR" ? "₹" : `${currency} `;
+  return `${sym}${(cents / 100).toFixed(2)}`;
+}
 
 export const Route = createFileRoute("/")({
   component: Index,
