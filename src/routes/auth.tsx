@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Rocket } from "lucide-react";
+import { bootstrapDefaultAdmin } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -11,10 +13,16 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const bootstrap = useServerFn(bootstrapDefaultAdmin);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Idempotently ensure the default admin@gmail.com / admin123 account exists
+    bootstrap().catch(() => { /* ignore */ });
+  }, [bootstrap]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,9 +57,12 @@ function AuthPage() {
           <Rocket className="w-4 h-4 text-primary" /> SparkHosting
         </Link>
         <h1 className="text-3xl font-bold mb-2">{mode === "login" ? "Welcome back" : "Create account"}</h1>
-        <p className="text-sm text-muted-foreground mb-8">
+        <p className="text-sm text-muted-foreground mb-4">
           {mode === "login" ? "Sign in to manage your plans." : "Sign up to access the admin panel."}
         </p>
+        <div className="mb-6 text-xs rounded-lg border border-primary/30 bg-primary/5 p-3 text-muted-foreground">
+          <span className="text-primary font-semibold">Default admin:</span> admin@gmail.com / admin123
+        </div>
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">Email</label>
