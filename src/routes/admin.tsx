@@ -73,7 +73,6 @@ function AdminPage() {
   const [fetching, setFetching] = useState(false);
   const [filter, setFilter] = useState<"all" | Plan["category"]>("all");
   const [editing, setEditing] = useState<Partial<Plan> | null>(null);
-  const [claiming, setClaiming] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [revokeSelf, setRevokeSelf] = useState(false);
