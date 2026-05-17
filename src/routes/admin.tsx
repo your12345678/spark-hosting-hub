@@ -68,11 +68,16 @@ const emptyPlan = (): Partial<Plan> => ({
 function AdminPage() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const changeAdminFn = useServerFn(changeMainAdmin);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [fetching, setFetching] = useState(false);
   const [filter, setFilter] = useState<"all" | Plan["category"]>("all");
   const [editing, setEditing] = useState<Partial<Plan> | null>(null);
   const [claiming, setClaiming] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [revokeSelf, setRevokeSelf] = useState(false);
+  const [changing, setChanging] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -139,6 +144,25 @@ function AdminPage() {
     const { error } = await supabase.from("plans").update({ [field]: value } as any).eq("id", id);
     if (error) return toast.error(error.message);
     refresh();
+  }
+
+  async function handleChangeAdmin(e: React.FormEvent) {
+    e.preventDefault();
+    setChanging(true);
+    try {
+      const res = await changeAdminFn({ data: { email: newAdminEmail, password: newAdminPassword, revokeCaller: revokeSelf } });
+      toast.success(`Admin set to ${res.email}`);
+      setNewAdminEmail("");
+      setNewAdminPassword("");
+      if (revokeSelf) {
+        await supabase.auth.signOut();
+        navigate({ to: "/auth" });
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to change admin");
+    } finally {
+      setChanging(false);
+    }
   }
 
   const filtered = useMemo(
