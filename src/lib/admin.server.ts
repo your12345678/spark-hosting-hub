@@ -1,9 +1,15 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export async function ensureAdminUser(email: string, password: string) {
-  const list = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  if (list.error) throw new Error(list.error.message);
-  let user = list.data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+  const target = email.toLowerCase();
+  let user: any = null;
+  for (let page = 1; page <= 20; page++) {
+    const list = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (list.error) throw new Error(list.error.message);
+    user = list.data.users.find((u) => u.email?.toLowerCase() === target);
+    if (user) break;
+    if (list.data.users.length < 1000) break;
+  }
 
   if (!user) {
     const created = await supabaseAdmin.auth.admin.createUser({
