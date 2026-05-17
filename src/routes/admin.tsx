@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket } from "lucide-react";
+import { Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket, UserCog } from "lucide-react";
+import { changeMainAdmin } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
