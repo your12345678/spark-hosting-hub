@@ -19,15 +19,8 @@ export async function ensureAdminUser(email: string, password: string) {
     });
     if (created.error) throw new Error(created.error.message);
     user = created.data.user!;
-  } else {
-    const upd = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      password,
-      email_confirm: true,
-    });
-    if (upd.error && !/weak|pwned|known/i.test(upd.error.message)) {
-      throw new Error(upd.error.message);
-    }
   }
+  // If user already exists, do NOT touch their password — they own the account.
 
   const { error: roleErr } = await supabaseAdmin
     .from("user_roles")
