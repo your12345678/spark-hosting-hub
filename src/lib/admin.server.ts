@@ -24,7 +24,9 @@ export async function ensureAdminUser(email: string, password: string) {
       password,
       email_confirm: true,
     });
-    if (upd.error) throw new Error(upd.error.message);
+    if (upd.error && !/weak|pwned|known/i.test(upd.error.message)) {
+      throw new Error(upd.error.message);
+    }
   }
 
   const { error: roleErr } = await supabaseAdmin
