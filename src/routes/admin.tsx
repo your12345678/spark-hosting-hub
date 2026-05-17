@@ -167,18 +167,11 @@ function AdminPage() {
           <Shield className="w-10 h-10 text-primary mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Admin access required</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Signed in as {user.email}. If you are the site owner, claim the first admin role below.
+            Signed in as {user.email}. Ask an existing admin to grant you access.
           </p>
           <button
-            onClick={claimAdmin}
-            disabled={claiming}
-            className="h-12 px-6 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark hover:scale-[1.02] transition disabled:opacity-60"
-          >
-            {claiming ? "Claiming…" : "Claim first admin"}
-          </button>
-          <button
             onClick={async () => { await supabase.auth.signOut(); navigate({ to: "/" }); }}
-            className="mt-4 text-sm text-muted-foreground hover:text-foreground block mx-auto"
+            className="mt-2 text-sm text-muted-foreground hover:text-foreground block mx-auto"
           >Sign out</button>
         </div>
       </div>
