@@ -98,18 +98,6 @@ function AdminPage() {
     setFetching(false);
   }
 
-  async function claimAdmin() {
-    setClaiming(true);
-    const { data, error } = await supabase.rpc("claim_first_admin");
-    setClaiming(false);
-    if (error) return toast.error(error.message);
-    if (data) {
-      toast.success("You are now admin. Reloading…");
-      setTimeout(() => location.reload(), 600);
-    } else {
-      toast.error("An admin already exists. Ask them to grant you access.");
-    }
-  }
 
   async function save(p: Partial<Plan>) {
     const payload = {
