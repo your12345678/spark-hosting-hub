@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket } from "lucide-react";
+import { Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket, UserCog } from "lucide-react";
+import { changeMainAdmin } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -66,11 +68,16 @@ const emptyPlan = (): Partial<Plan> => ({
 function AdminPage() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const changeAdminFn = useServerFn(changeMainAdmin);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [fetching, setFetching] = useState(false);
   const [filter, setFilter] = useState<"all" | Plan["category"]>("all");
   const [editing, setEditing] = useState<Partial<Plan> | null>(null);
   const [claiming, setClaiming] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [revokeSelf, setRevokeSelf] = useState(false);
+  const [changing, setChanging] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -137,6 +144,25 @@ function AdminPage() {
     const { error } = await supabase.from("plans").update({ [field]: value } as any).eq("id", id);
     if (error) return toast.error(error.message);
     refresh();
+  }
+
+  async function handleChangeAdmin(e: React.FormEvent) {
+    e.preventDefault();
+    setChanging(true);
+    try {
+      const res = await changeAdminFn({ data: { email: newAdminEmail, password: newAdminPassword, revokeCaller: revokeSelf } });
+      toast.success(`Admin set to ${res.email}`);
+      setNewAdminEmail("");
+      setNewAdminPassword("");
+      if (revokeSelf) {
+        await supabase.auth.signOut();
+        navigate({ to: "/auth" });
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to change admin");
+    } finally {
+      setChanging(false);
+    }
   }
 
   const filtered = useMemo(
@@ -262,6 +288,35 @@ function AdminPage() {
             )}
           </div>
         )}
+
+        <section className="mt-16 card-3d rounded-3xl p-8 max-w-2xl">
+          <div className="flex items-center gap-3 mb-2">
+            <UserCog className="w-5 h-5 text-primary" />
+            <h2 className="text-2xl font-bold">Change main admin</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-6">
+            Create a new admin account (or promote an existing email) with the password you set. Optionally remove your own admin role after the switch.
+          </p>
+          <form onSubmit={handleChangeAdmin} className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-muted-foreground">New admin email</label>
+                <input type="email" required value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} className={`${inputCls} mt-1`} placeholder="new-admin@example.com" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-muted-foreground">New password</label>
+                <input type="password" required minLength={6} value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} className={`${inputCls} mt-1`} placeholder="At least 6 characters" />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={revokeSelf} onChange={(e) => setRevokeSelf(e.target.checked)} />
+              Remove my own admin access after switching (I will be signed out)
+            </label>
+            <button disabled={changing} className="h-11 px-6 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark inline-flex items-center gap-2 text-sm disabled:opacity-60">
+              <Save className="w-4 h-4" /> {changing ? "Updating…" : "Set as main admin"}
+            </button>
+          </form>
+        </section>
       </main>
 
       {editing && <PlanEditor initial={editing} onClose={() => setEditing(null)} onSave={save} />}
