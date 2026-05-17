@@ -73,7 +73,6 @@ function AdminPage() {
   const [fetching, setFetching] = useState(false);
   const [filter, setFilter] = useState<"all" | Plan["category"]>("all");
   const [editing, setEditing] = useState<Partial<Plan> | null>(null);
-  const [claiming, setClaiming] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [revokeSelf, setRevokeSelf] = useState(false);
@@ -99,18 +98,6 @@ function AdminPage() {
     setFetching(false);
   }
 
-  async function claimAdmin() {
-    setClaiming(true);
-    const { data, error } = await supabase.rpc("claim_first_admin");
-    setClaiming(false);
-    if (error) return toast.error(error.message);
-    if (data) {
-      toast.success("You are now admin. Reloading…");
-      setTimeout(() => location.reload(), 600);
-    } else {
-      toast.error("An admin already exists. Ask them to grant you access.");
-    }
-  }
 
   async function save(p: Partial<Plan>) {
     const payload = {
@@ -180,18 +167,11 @@ function AdminPage() {
           <Shield className="w-10 h-10 text-primary mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Admin access required</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Signed in as {user.email}. If you are the site owner, claim the first admin role below.
+            Signed in as {user.email}. Ask an existing admin to grant you access.
           </p>
           <button
-            onClick={claimAdmin}
-            disabled={claiming}
-            className="h-12 px-6 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark hover:scale-[1.02] transition disabled:opacity-60"
-          >
-            {claiming ? "Claiming…" : "Claim first admin"}
-          </button>
-          <button
             onClick={async () => { await supabase.auth.signOut(); navigate({ to: "/" }); }}
-            className="mt-4 text-sm text-muted-foreground hover:text-foreground block mx-auto"
+            className="mt-2 text-sm text-muted-foreground hover:text-foreground block mx-auto"
           >Sign out</button>
         </div>
       </div>
