@@ -19,8 +19,15 @@ export async function ensureAdminUser(email: string, password: string) {
     });
     if (created.error) throw new Error(created.error.message);
     user = created.data.user!;
+  } else {
+    // User exists — reset their password to the supplied one (admin API bypasses HIBP/weak checks).
+    const updated = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      password,
+      email_confirm: true,
+    });
+    if (updated.error) throw new Error(updated.error.message);
+    user = updated.data.user ?? user;
   }
-  // If user already exists, do NOT touch their password — they own the account.
 
   const { error: roleErr } = await supabaseAdmin
     .from("user_roles")
