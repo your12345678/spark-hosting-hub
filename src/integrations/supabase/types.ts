@@ -30,6 +30,7 @@ export type Database = {
           features: Json
           icon: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           is_featured: boolean
           location: string | null
@@ -58,6 +59,7 @@ export type Database = {
           features?: Json
           icon?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
           location?: string | null
@@ -86,6 +88,7 @@ export type Database = {
           features?: Json
           icon?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
           location?: string | null
@@ -105,18 +108,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_main: boolean
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_main?: boolean
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_main?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
