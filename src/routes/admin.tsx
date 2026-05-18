@@ -4,8 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket, UserCog } from "lucide-react";
-import { changeMainAdmin } from "@/lib/admin.functions";
+import { Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket, UserCog, Upload, Users, Crown, X } from "lucide-react";
+import { changeMainAdmin, listAdmins, grantAdmin, revokeAdminUser, setAdminMainFlag } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
