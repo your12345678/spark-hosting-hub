@@ -1,15 +1,19 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export async function ensureAdminUser(email: string, password: string) {
+export async function findUserByEmail(email: string) {
   const target = email.toLowerCase();
-  let user: any = null;
   for (let page = 1; page <= 20; page++) {
     const list = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
     if (list.error) throw new Error(list.error.message);
-    user = list.data.users.find((u) => u.email?.toLowerCase() === target);
-    if (user) break;
+    const user = list.data.users.find((u) => u.email?.toLowerCase() === target);
+    if (user) return user;
     if (list.data.users.length < 1000) break;
   }
+  return null;
+}
+
+export async function ensureAdminUser(email: string, password: string, isMain = false) {
+  let user = await findUserByEmail(email);
 
   if (!user) {
     const created = await supabaseAdmin.auth.admin.createUser({
@@ -20,7 +24,6 @@ export async function ensureAdminUser(email: string, password: string) {
     if (created.error) throw new Error(created.error.message);
     user = created.data.user!;
   } else {
-    // User exists — reset their password to the supplied one (admin API bypasses HIBP/weak checks).
     const updated = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       password,
       email_confirm: true,
@@ -31,8 +34,19 @@ export async function ensureAdminUser(email: string, password: string) {
 
   const { error: roleErr } = await supabaseAdmin
     .from("user_roles")
-    .upsert({ user_id: user.id, role: "admin" }, { onConflict: "user_id,role" });
+    .upsert(
+      { user_id: user.id, role: "admin", is_main: isMain },
+      { onConflict: "user_id,role" },
+    );
   if (roleErr) throw new Error(roleErr.message);
+
+  if (isMain) {
+    await supabaseAdmin
+      .from("user_roles")
+      .update({ is_main: true })
+      .eq("user_id", user.id)
+      .eq("role", "admin");
+  }
 
   return user;
 }
@@ -48,10 +62,81 @@ export async function isUserAdmin(userId: string) {
   return !!data;
 }
 
+export async function isUserMainAdmin(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .eq("is_main", true)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return !!data;
+}
+
 export async function revokeAdmin(userId: string) {
   await supabaseAdmin
     .from("user_roles")
     .delete()
     .eq("user_id", userId)
     .eq("role", "admin");
+}
+
+export async function listAdminUsers() {
+  const { data: roles, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("user_id, role, is_main, created_at")
+    .eq("role", "admin")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+
+  const result: { user_id: string; email: string | null; is_main: boolean; created_at: string }[] = [];
+  for (const r of roles ?? []) {
+    const { data: u } = await supabaseAdmin.auth.admin.getUserById(r.user_id);
+    result.push({
+      user_id: r.user_id,
+      email: u?.user?.email ?? null,
+      is_main: !!r.is_main,
+      created_at: r.created_at,
+    });
+  }
+  return result;
+}
+
+export async function grantAdminByEmail(email: string, isMain = false) {
+  const user = await findUserByEmail(email);
+  if (!user) throw new Error(`No account found for ${email}. Ask them to sign up first.`);
+  const { error } = await supabaseAdmin
+    .from("user_roles")
+    .upsert(
+      { user_id: user.id, role: "admin", is_main: isMain },
+      { onConflict: "user_id,role" },
+    );
+  if (error) throw new Error(error.message);
+  if (isMain) {
+    await supabaseAdmin
+      .from("user_roles")
+      .update({ is_main: true })
+      .eq("user_id", user.id)
+      .eq("role", "admin");
+  }
+  return { user_id: user.id, email: user.email };
+}
+
+export async function setMainAdminFlag(userId: string, isMain: boolean) {
+  if (!isMain) {
+    // Don't allow removing the last main admin
+    const { count } = await supabaseAdmin
+      .from("user_roles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "admin")
+      .eq("is_main", true);
+    if ((count ?? 0) <= 1) throw new Error("Cannot remove the last main admin");
+  }
+  const { error } = await supabaseAdmin
+    .from("user_roles")
+    .update({ is_main: isMain })
+    .eq("user_id", userId)
+    .eq("role", "admin");
+  if (error) throw new Error(error.message);
 }
