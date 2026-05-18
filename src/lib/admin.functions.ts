@@ -5,7 +5,7 @@ import { ensureAdminUser, isUserAdmin, revokeAdmin } from "./admin.server";
 
 export const bootstrapDefaultAdmin = createServerFn({ method: "POST" }).handler(async () => {
   try {
-    const user = await ensureAdminUser("admin@gmail.com", "admin123");
+    const user = await ensureAdminUser("lovable@admin.com", "LovableAdmin#2026");
     return { ok: true, email: user.email, error: null };
   } catch (error: any) {
     console.warn("Default admin bootstrap skipped:", error?.message ?? error);

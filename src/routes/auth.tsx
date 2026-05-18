@@ -62,7 +62,7 @@ function AuthPage() {
         </p>
         <div className="mb-6 text-xs rounded-lg border border-primary/30 bg-primary/5 p-3 text-muted-foreground">
           <span className="text-primary font-semibold">Default admin:</span>
-          <span> admin@gmail.com / admin123. Change the email and password from the admin panel after signing in.</span>
+          <span> lovable@admin.com / LovableAdmin#2026. Change the email and password from the admin panel after signing in.</span>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div>
