@@ -34,6 +34,7 @@ type Plan = {
   icon: string | null;
   cta_label: string | null;
   cta_url: string | null;
+  image_url: string | null;
   sort_order: number;
   is_active: boolean;
   is_featured: boolean;
