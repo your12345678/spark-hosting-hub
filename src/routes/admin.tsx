@@ -358,6 +358,9 @@ function PlanEditor({
           <Field label="Features (one per line)" full>
             <textarea rows={5} value={featuresText} onChange={(e) => setFeaturesText(e.target.value)} className={`${inputCls} h-auto py-2`} />
           </Field>
+          <Field label="Plan image" full>
+            <ImageUploader value={p.image_url ?? null} onChange={(url) => up("image_url", url)} />
+          </Field>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={!!p.is_active} onChange={(e) => up("is_active", e.target.checked)} /> Active (visible on site)
           </label>
