@@ -302,6 +302,8 @@ function AdminPage() {
             </button>
           </form>
         </section>
+
+        <AdminsSection currentUserId={user.id} />
       </main>
 
       {editing && <PlanEditor initial={editing} onClose={() => setEditing(null)} onSave={save} />}
