@@ -4,8 +4,13 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { ensureAdminUser, isUserAdmin, revokeAdmin } from "./admin.server";
 
 export const bootstrapDefaultAdmin = createServerFn({ method: "POST" }).handler(async () => {
-  const user = await ensureAdminUser("admin@gmail.com", "admin123");
-  return { ok: true, email: user.email };
+  try {
+    const user = await ensureAdminUser("admin@gmail.com", "admin123");
+    return { ok: true, email: user.email, error: null };
+  } catch (error: any) {
+    console.warn("Default admin bootstrap skipped:", error?.message ?? error);
+    return { ok: false, email: null, error: error?.message ?? "Default admin bootstrap failed" };
+  }
 });
 
 export const changeMainAdmin = createServerFn({ method: "POST" })
