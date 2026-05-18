@@ -392,3 +392,189 @@ function Field({ label, children, full }: { label: string; children: React.React
     </div>
   );
 }
+
+function ImageUploader({ value, onChange }: { value: string | null; onChange: (url: string | null) => void }) {
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return toast.error("Image must be under 5 MB");
+    setUploading(true);
+    const ext = file.name.split(".").pop() || "png";
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("plan-images").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type,
+    });
+    if (error) {
+      setUploading(false);
+      return toast.error(error.message);
+    }
+    const { data } = supabase.storage.from("plan-images").getPublicUrl(path);
+    onChange(data.publicUrl);
+    setUploading(false);
+    toast.success("Image uploaded");
+  }
+
+  return (
+    <div className="space-y-2">
+      {value ? (
+        <div className="relative inline-block">
+          <img src={value} alt="Plan" className="h-32 rounded-lg border border-border object-cover" />
+          <button type="button" onClick={() => onChange(null)} className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-destructive text-destructive-foreground grid place-items-center shadow">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : null}
+      <label className={`inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-dashed border-border hover:border-primary cursor-pointer text-sm ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+        <Upload className="w-4 h-4" />
+        {uploading ? "Uploading…" : value ? "Replace image" : "Upload image"}
+        <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      </label>
+    </div>
+  );
+}
+
+type AdminRow = { user_id: string; email: string | null; is_main: boolean; created_at: string };
+
+function AdminsSection({ currentUserId }: { currentUserId: string }) {
+  const listFn = useServerFn(listAdmins);
+  const grantFn = useServerFn(grantAdmin);
+  const revokeFn = useServerFn(revokeAdminUser);
+  const setMainFn = useServerFn(setAdminMainFlag);
+  const [admins, setAdmins] = useState<AdminRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [asMain, setAsMain] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const me = admins.find((a) => a.user_id === currentUserId);
+  const iAmMain = !!me?.is_main;
+
+  async function refresh() {
+    setLoading(true);
+    try {
+      const res = await listFn();
+      setAdmins(res.admins as AdminRow[]);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load admins");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { refresh(); }, []);
+
+  async function handleGrant(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await grantFn({ data: { email, isMain: asMain } });
+      toast.success(`Granted admin to ${email}`);
+      setEmail("");
+      setAsMain(false);
+      refresh();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to grant admin");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleRevoke(userId: string) {
+    if (!confirm("Remove admin access for this user?")) return;
+    try {
+      await revokeFn({ data: { userId } });
+      toast.success("Admin removed");
+      refresh();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed");
+    }
+  }
+
+  async function toggleMain(userId: string, next: boolean) {
+    try {
+      await setMainFn({ data: { userId, isMain: next } });
+      toast.success(next ? "Promoted to main admin" : "Demoted to admin");
+      refresh();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed");
+    }
+  }
+
+  return (
+    <section className="mt-10 card-3d rounded-3xl p-8 max-w-3xl">
+      <div className="flex items-center gap-3 mb-2">
+        <Users className="w-5 h-5 text-primary" />
+        <h2 className="text-2xl font-bold">Admins & roles</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-6">
+        {iAmMain
+          ? "Grant admin access to anyone with an account. Promote trusted admins to main admin to let them manage roles too."
+          : "Only the main admin can grant or revoke admin roles. You can still manage plans."}
+      </p>
+
+      {iAmMain && (
+        <form onSubmit={handleGrant} className="grid sm:grid-cols-[1fr_auto_auto] gap-3 items-end mb-6">
+          <div>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">User email</label>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} mt-1`} placeholder="user@example.com" />
+          </div>
+          <label className="flex items-center gap-2 text-sm h-10">
+            <input type="checkbox" checked={asMain} onChange={(e) => setAsMain(e.target.checked)} />
+            Main admin
+          </label>
+          <button disabled={submitting} className="h-10 px-5 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark inline-flex items-center gap-2 text-sm disabled:opacity-60">
+            <Plus className="w-4 h-4" /> {submitting ? "Adding…" : "Add admin"}
+          </button>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      ) : (
+        <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+          {admins.map((a) => (
+            <li key={a.user_id} className="flex items-center gap-3 px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate">{a.email ?? a.user_id}</div>
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2 mt-0.5">
+                  {a.is_main ? (
+                    <span className="inline-flex items-center gap-1 text-primary"><Crown className="w-3 h-3" /> Main admin</span>
+                  ) : (
+                    <span>Admin</span>
+                  )}
+                  {a.user_id === currentUserId && <span className="text-muted-foreground">• you</span>}
+                </div>
+              </div>
+              {iAmMain && a.user_id !== currentUserId && (
+                <>
+                  <button
+                    onClick={() => toggleMain(a.user_id, !a.is_main)}
+                    className="h-8 px-3 rounded-full text-xs border border-border hover:border-primary inline-flex items-center gap-1"
+                    title={a.is_main ? "Demote to admin" : "Promote to main admin"}
+                  >
+                    <Crown className="w-3 h-3" /> {a.is_main ? "Demote" : "Promote"}
+                  </button>
+                  <button
+                    onClick={() => handleRevoke(a.user_id)}
+                    className="h-8 w-8 rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 grid place-items-center"
+                    title="Remove admin"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+            </li>
+          ))}
+          {admins.length === 0 && (
+            <li className="px-4 py-6 text-center text-sm text-muted-foreground">No admins yet.</li>
+          )}
+        </ul>
+      )}
+    </section>
+  );
+}
