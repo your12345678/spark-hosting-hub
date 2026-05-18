@@ -60,6 +60,7 @@ const emptyPlan = (): Partial<Plan> => ({
   features: [],
   badge: "",
   cta_label: "Order now",
+  image_url: null,
   cta_url: "",
   sort_order: 0,
   is_active: true,
