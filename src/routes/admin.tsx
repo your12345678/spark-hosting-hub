@@ -232,6 +232,9 @@ function AdminPage() {
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
             {filtered.map((p) => (
               <div key={p.id} className="card-3d rounded-2xl p-6 relative">
+                {p.image_url && (
+                  <img src={p.image_url} alt={p.name} className="w-full h-32 object-cover rounded-xl mb-4 border border-border" />
+                )}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] uppercase tracking-widest text-primary">{p.category}</span>
                   <div className="flex gap-1">
