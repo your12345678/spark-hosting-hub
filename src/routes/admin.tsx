@@ -306,10 +306,6 @@ function AdminPage() {
 
       {editing && <PlanEditor initial={editing} onClose={() => setEditing(null)} onSave={save} />}
     </div>
-      </main>
-
-      {editing && <PlanEditor initial={editing} onClose={() => setEditing(null)} onSave={save} />}
-    </div>
   );
 }
 
