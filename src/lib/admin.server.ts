@@ -12,7 +12,12 @@ export async function findUserByEmail(email: string) {
   return null;
 }
 
-export async function ensureAdminUser(email: string, password: string, isMain = false) {
+export async function ensureAdminUser(
+  email: string,
+  password: string,
+  isMain = false,
+  isOwner = false,
+) {
   let user = await findUserByEmail(email);
 
   if (!user) {
@@ -35,15 +40,15 @@ export async function ensureAdminUser(email: string, password: string, isMain = 
   const { error: roleErr } = await supabaseAdmin
     .from("user_roles")
     .upsert(
-      { user_id: user.id, role: "admin", is_main: isMain },
+      { user_id: user.id, role: "admin", is_main: isMain, is_owner: isOwner },
       { onConflict: "user_id,role" },
     );
   if (roleErr) throw new Error(roleErr.message);
 
-  if (isMain) {
+  if (isMain || isOwner) {
     await supabaseAdmin
       .from("user_roles")
-      .update({ is_main: true })
+      .update({ is_main: isMain || isOwner, is_owner: isOwner })
       .eq("user_id", user.id)
       .eq("role", "admin");
   }
@@ -74,7 +79,24 @@ export async function isUserMainAdmin(userId: string) {
   return !!data;
 }
 
+export async function isUserOwner(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .eq("is_owner", true)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return !!data;
+}
+
+async function isTargetOwner(userId: string) {
+  return isUserOwner(userId);
+}
+
 export async function revokeAdmin(userId: string) {
+  if (await isTargetOwner(userId)) throw new Error("The owner cannot be removed");
   await supabaseAdmin
     .from("user_roles")
     .delete()
@@ -85,18 +107,25 @@ export async function revokeAdmin(userId: string) {
 export async function listAdminUsers() {
   const { data: roles, error } = await supabaseAdmin
     .from("user_roles")
-    .select("user_id, role, is_main, created_at")
+    .select("user_id, role, is_main, is_owner, created_at")
     .eq("role", "admin")
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
 
-  const result: { user_id: string; email: string | null; is_main: boolean; created_at: string }[] = [];
+  const result: {
+    user_id: string;
+    email: string | null;
+    is_main: boolean;
+    is_owner: boolean;
+    created_at: string;
+  }[] = [];
   for (const r of roles ?? []) {
     const { data: u } = await supabaseAdmin.auth.admin.getUserById(r.user_id);
     result.push({
       user_id: r.user_id,
       email: u?.user?.email ?? null,
       is_main: !!r.is_main,
+      is_owner: !!(r as any).is_owner,
       created_at: r.created_at,
     });
   }
@@ -109,7 +138,7 @@ export async function grantAdminByEmail(email: string, isMain = false) {
   const { error } = await supabaseAdmin
     .from("user_roles")
     .upsert(
-      { user_id: user.id, role: "admin", is_main: isMain },
+      { user_id: user.id, role: "admin", is_main: isMain, is_owner: false },
       { onConflict: "user_id,role" },
     );
   if (error) throw new Error(error.message);
@@ -124,15 +153,7 @@ export async function grantAdminByEmail(email: string, isMain = false) {
 }
 
 export async function setMainAdminFlag(userId: string, isMain: boolean) {
-  if (!isMain) {
-    // Don't allow removing the last main admin
-    const { count } = await supabaseAdmin
-      .from("user_roles")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "admin")
-      .eq("is_main", true);
-    if ((count ?? 0) <= 1) throw new Error("Cannot remove the last main admin");
-  }
+  if (await isTargetOwner(userId)) throw new Error("The owner's role cannot be changed");
   const { error } = await supabaseAdmin
     .from("user_roles")
     .update({ is_main: isMain })
