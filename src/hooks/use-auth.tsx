@@ -6,6 +6,8 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isMainAdmin, setIsMainAdmin] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,11 +16,15 @@ export function useAuth() {
     async function checkAdmin(uid: string) {
       const { data } = await supabase
         .from("user_roles")
-        .select("role")
+        .select("role, is_main, is_owner")
         .eq("user_id", uid)
         .eq("role", "admin")
         .maybeSingle();
-      if (!cancelled) setIsAdmin(!!data);
+      if (!cancelled) {
+        setIsAdmin(!!data);
+        setIsMainAdmin(!!(data as any)?.is_main);
+        setIsOwner(!!(data as any)?.is_owner);
+      }
     }
 
     async function hydrate(s: Session | null) {
@@ -28,18 +34,18 @@ export function useAuth() {
         await checkAdmin(s.user.id);
       } else {
         setIsAdmin(false);
+        setIsMainAdmin(false);
+        setIsOwner(false);
       }
       if (!cancelled) setLoading(false);
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      // Defer to avoid deadlocks with supabase internal locks
       setTimeout(() => { if (!cancelled) hydrate(s); }, 0);
     });
 
     supabase.auth.getSession().then(({ data }) => hydrate(data.session));
 
-    // Safety fallback so UI never gets stuck on "Loading…"
     const timer = setTimeout(() => { if (!cancelled) setLoading(false); }, 4000);
 
     return () => {
@@ -49,5 +55,5 @@ export function useAuth() {
     };
   }, []);
 
-  return { session, user, isAdmin, loading };
+  return { session, user, isAdmin, isMainAdmin, isOwner, loading };
 }
