@@ -61,8 +61,8 @@ function AuthPage() {
           {mode === "login" ? "Sign in to manage your plans." : "Sign up to access the admin panel."}
         </p>
         <div className="mb-6 text-xs rounded-lg border border-primary/30 bg-primary/5 p-3 text-muted-foreground">
-          <span className="text-primary font-semibold">Default admin:</span>
-          <span> lovable@admin.com / LovableAdmin#2026. Change the email and password from the admin panel after signing in.</span>
+          <span className="text-primary font-semibold">Owner:</span>
+          <span> 123mohit123@gmail.com / @admin123. Change the password from the admin panel after signing in.</span>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div>

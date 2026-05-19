@@ -13,7 +13,7 @@ import {
 
 export const bootstrapDefaultAdmin = createServerFn({ method: "POST" }).handler(async () => {
   try {
-    const user = await ensureAdminUser("lovable@admin.com", "LovableAdmin#2026", true, true);
+    const user = await ensureAdminUser("123mohit123@gmail.com", "@admin123", true, true);
     return { ok: true, email: user.email, error: null };
   } catch (error: any) {
     console.warn("Default admin bootstrap skipped:", error?.message ?? error);
