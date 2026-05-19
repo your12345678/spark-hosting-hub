@@ -68,7 +68,7 @@ const emptyPlan = (): Partial<Plan> => ({
 });
 
 function AdminPage() {
-  const { user, isAdmin, isOwner, loading } = useAuth();
+  const { user, isAdmin, isMainAdmin, isOwner, loading } = useAuth();
   const navigate = useNavigate();
   const changeAdminFn = useServerFn(changeMainAdmin);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -275,35 +275,37 @@ function AdminPage() {
         )}
 
         {isOwner && (
-          <>
-            <section className="mt-16 card-3d rounded-3xl p-8 max-w-2xl">
-              <div className="flex items-center gap-3 mb-2">
-                <UserCog className="w-5 h-5 text-primary" />
-                <h2 className="text-2xl font-bold">Change main admin</h2>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">
-                Create or promote a main admin account. Only you (owner) can do this. Your owner access is never affected.
-              </p>
-              <form onSubmit={handleChangeAdmin} className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Main admin email</label>
-                    <input type="email" required value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} className={`${inputCls} mt-1`} placeholder="main-admin@example.com" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Password</label>
-                    <input type="password" required minLength={6} value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} className={`${inputCls} mt-1`} placeholder="At least 6 characters" />
-                  </div>
+          <section className="mt-16 card-3d rounded-3xl p-8 max-w-2xl">
+            <div className="flex items-center gap-3 mb-2">
+              <UserCog className="w-5 h-5 text-primary" />
+              <h2 className="text-2xl font-bold">Change main admin</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">
+              Create or promote a main admin account. Only you (owner) can do this. Your owner access is never affected.
+            </p>
+            <form onSubmit={handleChangeAdmin} className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Main admin email</label>
+                  <input type="email" required value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} className={`${inputCls} mt-1`} placeholder="main-admin@example.com" />
                 </div>
-                <button disabled={changing} className="h-11 px-6 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark inline-flex items-center gap-2 text-sm disabled:opacity-60">
-                  <Save className="w-4 h-4" /> {changing ? "Updating…" : "Set as main admin"}
-                </button>
-              </form>
-            </section>
-
-            <AdminsSection currentUserId={user.id} />
-          </>
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Password</label>
+                  <input type="password" required minLength={6} value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} className={`${inputCls} mt-1`} placeholder="At least 6 characters" />
+                </div>
+              </div>
+              <button disabled={changing} className="h-11 px-6 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark inline-flex items-center gap-2 text-sm disabled:opacity-60">
+                <Save className="w-4 h-4" /> {changing ? "Updating…" : "Set as main admin"}
+              </button>
+            </form>
+          </section>
         )}
+
+        {(isOwner || isMainAdmin) && <AdminsSection currentUserId={user.id} isOwner={isOwner} />}
+      </main>
+
+      {editing && <PlanEditor initial={editing} onClose={() => setEditing(null)} onSave={save} />}
+    </div>
       </main>
 
       {editing && <PlanEditor initial={editing} onClose={() => setEditing(null)} onSave={save} />}
