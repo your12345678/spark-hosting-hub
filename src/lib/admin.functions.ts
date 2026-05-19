@@ -1,9 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   ensureAdminUser,
   isUserAdmin,
+  isUserMainAdmin,
   isUserOwner,
   revokeAdmin,
   listAdminUsers,
@@ -58,9 +60,29 @@ export const grantAdmin = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    if (!(await isUserOwner(context.userId))) throw new Error("Only the owner can add admins");
+    const isOwner = await isUserOwner(context.userId);
+    const isMain = !isOwner ? await isUserMainAdmin(context.userId) : false;
+    if (!isOwner && !isMain) throw new Error("Only owner or main admin can add admins");
+    if (data.isMain && !isOwner) throw new Error("Only the owner can grant main admin");
     const u = await grantAdminByEmail(data.email, !!data.isMain);
     return { ok: true, ...u };
+  });
+
+export const changeUserPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      userId: z.string().uuid(),
+      password: z.string().min(6).max(100),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await isUserOwner(context.userId))) throw new Error("Only the owner can change passwords");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.password,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const revokeAdminUser = createServerFn({ method: "POST" })
