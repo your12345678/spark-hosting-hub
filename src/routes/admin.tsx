@@ -543,7 +543,9 @@ function AdminsSection({ currentUserId }: { currentUserId: string }) {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{a.email ?? a.user_id}</div>
                 <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2 mt-0.5">
-                  {a.is_main ? (
+                  {a.is_owner ? (
+                    <span className="inline-flex items-center gap-1 text-primary"><Crown className="w-3 h-3" /> Owner</span>
+                  ) : a.is_main ? (
                     <span className="inline-flex items-center gap-1 text-primary"><Crown className="w-3 h-3" /> Main admin</span>
                   ) : (
                     <span>Admin</span>
@@ -551,7 +553,7 @@ function AdminsSection({ currentUserId }: { currentUserId: string }) {
                   {a.user_id === currentUserId && <span className="text-muted-foreground">• you</span>}
                 </div>
               </div>
-              {iAmMain && a.user_id !== currentUserId && (
+              {iAmOwner && !a.is_owner && a.user_id !== currentUserId && (
                 <>
                   <button
                     onClick={() => toggleMain(a.user_id, !a.is_main)}
