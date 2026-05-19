@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket, UserCog, Upload, Users, Crown, X } from "lucide-react";
-import { changeMainAdmin, listAdmins, grantAdmin, revokeAdminUser, setAdminMainFlag } from "@/lib/admin.functions";
+import { changeMainAdmin, listAdmins, grantAdmin, revokeAdminUser, setAdminMainFlag, changeUserPassword } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -438,20 +438,23 @@ function ImageUploader({ value, onChange }: { value: string | null; onChange: (u
 
 type AdminRow = { user_id: string; email: string | null; is_main: boolean; is_owner: boolean; created_at: string };
 
-function AdminsSection({ currentUserId }: { currentUserId: string }) {
+function AdminsSection({ currentUserId, isOwner }: { currentUserId: string; isOwner: boolean }) {
   const listFn = useServerFn(listAdmins);
   const grantFn = useServerFn(grantAdmin);
   const revokeFn = useServerFn(revokeAdminUser);
   const setMainFn = useServerFn(setAdminMainFlag);
+  const changePwdFn = useServerFn(changeUserPassword);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [asMain, setAsMain] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [pwdById, setPwdById] = useState<Record<string, string>>({});
+  const [savingPwd, setSavingPwd] = useState<string | null>(null);
 
   const me = admins.find((a) => a.user_id === currentUserId);
-  const iAmOwner = !!me?.is_owner;
-  const iAmMain = iAmOwner;
+  const iAmOwner = isOwner || !!me?.is_owner;
+  const iAmMain = iAmOwner || !!me?.is_main;
 
   async function refresh() {
     setLoading(true);
@@ -471,7 +474,7 @@ function AdminsSection({ currentUserId }: { currentUserId: string }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await grantFn({ data: { email, isMain: asMain } });
+      await grantFn({ data: { email, isMain: iAmOwner ? asMain : false } });
       toast.success(`Granted admin to ${email}`);
       setEmail("");
       setAsMain(false);
@@ -504,6 +507,21 @@ function AdminsSection({ currentUserId }: { currentUserId: string }) {
     }
   }
 
+  async function handleChangePwd(userId: string) {
+    const password = (pwdById[userId] ?? "").trim();
+    if (password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    setSavingPwd(userId);
+    try {
+      await changePwdFn({ data: { userId, password } });
+      toast.success("Password updated");
+      setPwdById((prev) => ({ ...prev, [userId]: "" }));
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed");
+    } finally {
+      setSavingPwd(null);
+    }
+  }
+
   return (
     <section className="mt-10 card-3d rounded-3xl p-8 max-w-3xl">
       <div className="flex items-center gap-3 mb-2">
@@ -511,9 +529,9 @@ function AdminsSection({ currentUserId }: { currentUserId: string }) {
         <h2 className="text-2xl font-bold">Admins & roles</h2>
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        {iAmMain
-          ? "Grant admin access to anyone with an account. Promote trusted admins to main admin to let them manage roles too."
-          : "Only the main admin can grant or revoke admin roles. You can still manage plans."}
+        {iAmOwner
+          ? "Grant admin access, promote main admins, and reset any admin's password."
+          : "As a main admin you can grant regular admin access. Only the owner can promote to main admin or reset passwords."}
       </p>
 
       {iAmMain && (
@@ -522,10 +540,12 @@ function AdminsSection({ currentUserId }: { currentUserId: string }) {
             <label className="text-[10px] uppercase tracking-widest text-muted-foreground">User email</label>
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} mt-1`} placeholder="user@example.com" />
           </div>
-          <label className="flex items-center gap-2 text-sm h-10">
-            <input type="checkbox" checked={asMain} onChange={(e) => setAsMain(e.target.checked)} />
-            Main admin
-          </label>
+          {iAmOwner ? (
+            <label className="flex items-center gap-2 text-sm h-10">
+              <input type="checkbox" checked={asMain} onChange={(e) => setAsMain(e.target.checked)} />
+              Main admin
+            </label>
+          ) : <span />}
           <button disabled={submitting} className="h-10 px-5 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark inline-flex items-center gap-2 text-sm disabled:opacity-60">
             <Plus className="w-4 h-4" /> {submitting ? "Adding…" : "Add admin"}
           </button>
@@ -537,37 +557,57 @@ function AdminsSection({ currentUserId }: { currentUserId: string }) {
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
           {admins.map((a) => (
-            <li key={a.user_id} className="flex items-center gap-3 px-4 py-3">
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">{a.email ?? a.user_id}</div>
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2 mt-0.5">
-                  {a.is_owner ? (
-                    <span className="inline-flex items-center gap-1 text-primary"><Crown className="w-3 h-3" /> Owner</span>
-                  ) : a.is_main ? (
-                    <span className="inline-flex items-center gap-1 text-primary"><Crown className="w-3 h-3" /> Main admin</span>
-                  ) : (
-                    <span>Admin</span>
-                  )}
-                  {a.user_id === currentUserId && <span className="text-muted-foreground">• you</span>}
+            <li key={a.user_id} className="px-4 py-3 space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{a.email ?? a.user_id}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2 mt-0.5">
+                    {a.is_owner ? (
+                      <span className="inline-flex items-center gap-1 text-primary"><Crown className="w-3 h-3" /> Owner</span>
+                    ) : a.is_main ? (
+                      <span className="inline-flex items-center gap-1 text-primary"><Crown className="w-3 h-3" /> Main admin</span>
+                    ) : (
+                      <span>Admin</span>
+                    )}
+                    {a.user_id === currentUserId && <span className="text-muted-foreground">• you</span>}
+                  </div>
                 </div>
+                {iAmOwner && !a.is_owner && a.user_id !== currentUserId && (
+                  <>
+                    <button
+                      onClick={() => toggleMain(a.user_id, !a.is_main)}
+                      className="h-8 px-3 rounded-full text-xs border border-border hover:border-primary inline-flex items-center gap-1"
+                      title={a.is_main ? "Demote to admin" : "Promote to main admin"}
+                    >
+                      <Crown className="w-3 h-3" /> {a.is_main ? "Demote" : "Promote"}
+                    </button>
+                    <button
+                      onClick={() => handleRevoke(a.user_id)}
+                      className="h-8 w-8 rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 grid place-items-center"
+                      title="Remove admin"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
-              {iAmOwner && !a.is_owner && a.user_id !== currentUserId && (
-                <>
+              {iAmOwner && (
+                <div className="flex gap-2 items-center pl-1">
+                  <input
+                    type="password"
+                    placeholder="New password (min 6)"
+                    value={pwdById[a.user_id] ?? ""}
+                    onChange={(e) => setPwdById((prev) => ({ ...prev, [a.user_id]: e.target.value }))}
+                    className={`${inputCls} h-9 text-xs flex-1`}
+                  />
                   <button
-                    onClick={() => toggleMain(a.user_id, !a.is_main)}
-                    className="h-8 px-3 rounded-full text-xs border border-border hover:border-primary inline-flex items-center gap-1"
-                    title={a.is_main ? "Demote to admin" : "Promote to main admin"}
+                    onClick={() => handleChangePwd(a.user_id)}
+                    disabled={savingPwd === a.user_id}
+                    className="h-9 px-3 rounded-full text-xs border border-border hover:border-primary inline-flex items-center gap-1 disabled:opacity-60"
                   >
-                    <Crown className="w-3 h-3" /> {a.is_main ? "Demote" : "Promote"}
+                    <Save className="w-3 h-3" /> {savingPwd === a.user_id ? "Saving…" : "Set password"}
                   </button>
-                  <button
-                    onClick={() => handleRevoke(a.user_id)}
-                    className="h-8 w-8 rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 grid place-items-center"
-                    title="Remove admin"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </>
+                </div>
               )}
             </li>
           ))}
