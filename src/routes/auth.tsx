@@ -40,7 +40,7 @@ function AuthPage() {
         toast.success("Account created. Check your email to confirm, then sign in.");
         setMode("login");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password: cleanPassword });
         if (error) throw error;
         toast.success("Welcome back!");
         navigate({ to: "/admin" });
