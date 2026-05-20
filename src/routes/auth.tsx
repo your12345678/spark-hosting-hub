@@ -27,11 +27,13 @@ function AuthPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: cleanEmail,
+          password: cleanPassword,
           options: { emailRedirectTo: `${window.location.origin}/admin` },
         });
         if (error) throw error;
