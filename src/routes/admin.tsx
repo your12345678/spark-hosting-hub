@@ -274,6 +274,8 @@ function AdminPage() {
           </div>
         )}
 
+        {isOwner && <OwnerSelfAccount currentEmail={user.email ?? ""} />}
+
         {isOwner && (
           <section className="mt-16 card-3d rounded-3xl p-8 max-w-2xl">
             <div className="flex items-center gap-3 mb-2">
