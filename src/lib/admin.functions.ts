@@ -13,15 +13,44 @@ import {
   setMainAdminFlag,
 } from "./admin.server";
 
+// Default owner credentials — strong & not in known-leaks DB
+const DEFAULT_OWNER_EMAIL = "owner@sparkhost.io";
+const DEFAULT_OWNER_PASSWORD = "Sp4rkOwn3r#K9xq!2026";
+
 export const bootstrapDefaultAdmin = createServerFn({ method: "POST" }).handler(async () => {
   try {
-    const user = await ensureAdminUser("123mohit123@gmail.com", "@admin123", true, true);
+    // If an owner already exists, never recreate / overwrite — owner may have changed their email.
+    const { data: existingOwner } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("is_owner", true)
+      .maybeSingle();
+    if (existingOwner) return { ok: true, email: null, error: null };
+
+    const user = await ensureAdminUser(DEFAULT_OWNER_EMAIL, DEFAULT_OWNER_PASSWORD, true, true);
     return { ok: true, email: user.email, error: null };
   } catch (error: any) {
     console.warn("Default admin bootstrap skipped:", error?.message ?? error);
     return { ok: false, email: null, error: error?.message ?? "Default admin bootstrap failed" };
   }
 });
+
+export const updateOwnAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      email: z.string().trim().email().max(255).optional(),
+      password: z.string().min(8).max(100).optional(),
+    }).refine((v) => v.email || v.password, { message: "Provide email or password" }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const patch: { email?: string; password?: string; email_confirm?: boolean } = {};
+    if (data.email) { patch.email = data.email; patch.email_confirm = true; }
+    if (data.password) patch.password = data.password;
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(context.userId, patch);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
 
 export const changeMainAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
