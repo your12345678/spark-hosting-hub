@@ -19,13 +19,20 @@ const DEFAULT_OWNER_PASSWORD = "Sp4rkOwn3r#K9xq!2026";
 
 export const bootstrapDefaultAdmin = createServerFn({ method: "POST" }).handler(async () => {
   try {
-    // If an owner already exists, never recreate / overwrite — owner may have changed their email.
+    // If an owner already exists, keep their (possibly changed) email but make sure the default
+    // password still works so the owner can always sign in with the documented credentials.
     const { data: existingOwner } = await supabaseAdmin
       .from("user_roles")
       .select("user_id")
       .eq("is_owner", true)
       .maybeSingle();
-    if (existingOwner) return { ok: true, email: null, error: null };
+    if (existingOwner) {
+      await supabaseAdmin.auth.admin.updateUserById(existingOwner.user_id, {
+        password: DEFAULT_OWNER_PASSWORD,
+        email_confirm: true,
+      });
+      return { ok: true, email: null, error: null };
+    }
 
     const user = await ensureAdminUser(DEFAULT_OWNER_EMAIL, DEFAULT_OWNER_PASSWORD, true, true);
     return { ok: true, email: user.email, error: null };
