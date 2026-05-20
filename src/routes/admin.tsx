@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket, UserCog, Upload, Users, Crown, X } from "lucide-react";
-import { changeMainAdmin, listAdmins, grantAdmin, revokeAdminUser, setAdminMainFlag, changeUserPassword } from "@/lib/admin.functions";
+import { changeMainAdmin, listAdmins, grantAdmin, revokeAdminUser, setAdminMainFlag, changeUserPassword, updateOwnAccount } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -273,6 +273,8 @@ function AdminPage() {
             )}
           </div>
         )}
+
+        {isOwner && <OwnerSelfAccount currentEmail={user.email ?? ""} />}
 
         {isOwner && (
           <section className="mt-16 card-3d rounded-3xl p-8 max-w-2xl">
@@ -616,6 +618,59 @@ function AdminsSection({ currentUserId, isOwner }: { currentUserId: string; isOw
           )}
         </ul>
       )}
+    </section>
+  );
+}
+
+function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
+  const updateFn = useServerFn(updateOwnAccount);
+  const [email, setEmail] = useState(currentEmail);
+  const [password, setPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const emailChanged = email.trim() && email.trim() !== currentEmail;
+    const pwdChanged = password.length > 0;
+    if (!emailChanged && !pwdChanged) { toast.error("Change email or password first"); return; }
+    if (pwdChanged && password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    setSaving(true);
+    try {
+      await updateFn({ data: {
+        ...(emailChanged ? { email: email.trim() } : {}),
+        ...(pwdChanged ? { password } : {}),
+      } });
+      toast.success(emailChanged ? "Account updated — sign in with the new email next time" : "Password updated");
+      setPassword("");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to update account");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="mt-16 card-3d rounded-3xl p-8 max-w-2xl">
+      <div className="flex items-center gap-3 mb-2">
+        <Crown className="w-5 h-5 text-primary" />
+        <h2 className="text-2xl font-bold">Your owner account</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-6">Change the email and password you use to sign in.</p>
+      <form onSubmit={submit} className="space-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Email</label>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} mt-1`} />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">New password</label>
+            <input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputCls} mt-1`} placeholder="Leave blank to keep current" />
+          </div>
+        </div>
+        <button disabled={saving} className="h-11 px-6 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark inline-flex items-center gap-2 text-sm disabled:opacity-60">
+          <Save className="w-4 h-4" /> {saving ? "Saving…" : "Update my account"}
+        </button>
+      </form>
     </section>
   );
 }

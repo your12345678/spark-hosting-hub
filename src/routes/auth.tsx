@@ -62,7 +62,7 @@ function AuthPage() {
         </p>
         <div className="mb-6 text-xs rounded-lg border border-primary/30 bg-primary/5 p-3 text-muted-foreground">
           <span className="text-primary font-semibold">Owner:</span>
-          <span> 123mohit123@gmail.com / @admin123. Change the password from the admin panel after signing in.</span>
+          <span> owner@sparkhost.io / Sp4rkOwn3r#K9xq!2026 — change your email & password from the admin panel after signing in.</span>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div>
