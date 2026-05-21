@@ -77,10 +77,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Blazing-fast Minecraft, VPS and KVM hosting on AMD Ryzen, NVMe Gen4 storage and DDoS-protected network." },
       { name: "author", content: "SparkHosting" },
       { property: "og:title", content: "SparkHosting — Premium Game & Cloud Hosting" },
-      { property: "og:description", content: "Deploy in 60 seconds on the fastest hosting platform." },
+      { property: "og:description", content: "Blazing-fast Minecraft, VPS and KVM hosting on AMD Ryzen, NVMe Gen4 storage and DDoS-protected network." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "SparkHosting — Premium Game & Cloud Hosting" },
+      { name: "twitter:description", content: "Blazing-fast Minecraft, VPS and KVM hosting on AMD Ryzen, NVMe Gen4 storage and DDoS-protected network." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/5f4a6664-5424-4174-82a9-cfe983e781a7" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/5f4a6664-5424-4174-82a9-cfe983e781a7" },
     ],
     links: [
       {
