@@ -108,11 +108,15 @@ const vpsPlans = [
 function Wordmark({ size = "text-lg" }: { size?: string }) {
   return (
     <Link to="/" className="flex items-center gap-2.5 group">
-      <img
-        src={logo}
-        alt="SparkHosting"
-        className="h-11 w-11 object-contain drop-shadow-[0_0_18px_rgba(217,70,239,0.7)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[6deg]"
-      />
+      <div className="relative h-11 w-11 shrink-0 rounded-full bg-gradient-spark p-[2px] shadow-spark transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[6deg]">
+        <div className="h-full w-full rounded-full bg-background flex items-center justify-center overflow-hidden">
+          <img
+            src={logo}
+            alt="SparkHosting"
+            className="h-8 w-8 object-contain drop-shadow-[0_0_10px_rgba(217,70,239,0.8)]"
+          />
+        </div>
+      </div>
       <div className="leading-tight">
         <div className={`font-display font-bold ${size} tracking-tight`}>
           Spark<span className="text-gradient-spark">Hosting</span>
