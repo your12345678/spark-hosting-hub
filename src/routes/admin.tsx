@@ -622,7 +622,14 @@ function AdminsSection({ currentUserId, isOwner }: { currentUserId: string; isOw
   );
 }
 
+// ─── FIXED: OwnerSelfAccount ────────────────────────────────────────────────
+// Bug: after updateUserById changes the email server-side, Supabase invalidates
+// the old session token. Any subsequent server function call fails auth because
+// the middleware (requireSupabaseAuth) rejects the stale bearer token.
+// Fix: call refreshSession() after the update. If it fails (email change
+// invalidates the session), sign out gracefully and prompt re-login.
 function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
+  const navigate = useNavigate();
   const updateFn = useServerFn(updateOwnAccount);
   const [email, setEmail] = useState(currentEmail);
   const [password, setPassword] = useState("");
@@ -630,7 +637,7 @@ function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const emailChanged = email.trim() && email.trim() !== currentEmail;
+    const emailChanged = email.trim() !== "" && email.trim() !== currentEmail;
     const pwdChanged = password.length > 0;
     if (!emailChanged && !pwdChanged) { toast.error("Change email or password first"); return; }
     if (pwdChanged && password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
@@ -640,6 +647,20 @@ function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
         ...(emailChanged ? { email: email.trim() } : {}),
         ...(pwdChanged ? { password } : {}),
       } });
+
+      // Refresh the local session so the stored token matches the new credentials.
+      // Without this the old bearer token is rejected by requireSupabaseAuth on
+      // the very next server function call, producing "error updating user".
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        // Email change causes Supabase to invalidate the session entirely.
+        // Sign out cleanly and let the owner log in with their new credentials.
+        await supabase.auth.signOut();
+        toast.success("Credentials updated — please sign in again with your new details.");
+        navigate({ to: "/auth" });
+        return;
+      }
+
       toast.success(emailChanged ? "Account updated — sign in with the new email next time" : "Password updated");
       setPassword("");
     } catch (err: any) {
