@@ -676,21 +676,19 @@ function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
         <Crown className="w-5 h-5 text-primary" />
         <h2 className="text-2xl font-bold">Your owner account</h2>
       </div>
-      <p className="text-sm text-muted-foreground mb-6">Change the email and password you use to sign in.</p>
-      <form onSubmit={submit} className="space-y-4">
+      <p className="text-sm text-muted-foreground mb-6">Owner credentials cannot be changed for security.</p>
+      <form className="space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Email</label>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} mt-1`} />
+            <input type="email" disabled value={email} className={`${inputCls} mt-1 opacity-60 cursor-not-allowed`} />
           </div>
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">New password</label>
-            <input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputCls} mt-1`} placeholder="Leave blank to keep current" />
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Password</label>
+            <input type="password" disabled className={`${inputCls} mt-1 opacity-60 cursor-not-allowed`} placeholder="Cannot be changed" />
           </div>
         </div>
-        <button disabled={saving} className="h-11 px-6 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark inline-flex items-center gap-2 text-sm disabled:opacity-60">
-          <Save className="w-4 h-4" /> {saving ? "Saving…" : "Update my account"}
-        </button>
+        <p className="text-xs text-muted-foreground">Main owner account is protected and cannot be modified.</p>
       </form>
     </section>
   );
