@@ -123,9 +123,12 @@ function Wordmark({ size = "text-lg" }: { size?: string }) {
   );
 }
 
+type SiteLinks = { status_url: string; discord_url: string; terms_url: string; privacy_url: string };
+
 function Index() {
   const { user, isAdmin } = useAuth();
   const [plans, setPlans] = useState<DbPlan[]>([]);
+  const [siteLinks, setSiteLinks] = useState<SiteLinks>({ status_url: "", discord_url: "", terms_url: "", privacy_url: "" });
 
   useEffect(() => {
     supabase
@@ -134,6 +137,21 @@ function Index() {
       .eq("is_active", true)
       .order("sort_order")
       .then(({ data }) => setPlans((data ?? []) as any));
+
+    supabase
+      .from("site_settings")
+      .select("key, value")
+      .then(({ data }) => {
+        if (!data) return;
+        const map: Record<string, string> = {};
+        data.forEach((r: any) => { map[r.key] = r.value; });
+        setSiteLinks({
+          status_url: map.status_url ?? "",
+          discord_url: map.discord_url ?? "",
+          terms_url: map.terms_url ?? "",
+          privacy_url: map.privacy_url ?? "",
+        });
+      });
   }, []);
 
   const minecraftPlans = plans.filter((p) => p.category === "minecraft");
@@ -428,10 +446,10 @@ function Index() {
               <Wordmark size="text-base" />
             </div>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-foreground">Status</a>
-              <a href="#" className="hover:text-foreground">Discord</a>
-              <a href="#" className="hover:text-foreground">Terms</a>
-              <a href="#" className="hover:text-foreground">Privacy</a>
+              {siteLinks.status_url && <a href={siteLinks.status_url} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">Status</a>}
+              {siteLinks.discord_url && <a href={siteLinks.discord_url} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">Discord</a>}
+              {siteLinks.terms_url && <a href={siteLinks.terms_url} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">Terms</a>}
+              {siteLinks.privacy_url && <a href={siteLinks.privacy_url} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">Privacy</a>}
             </div>
             <div>© {new Date().getFullYear()} SparkHosting. All rights reserved.</div>
           </div>

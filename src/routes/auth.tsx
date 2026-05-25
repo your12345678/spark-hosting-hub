@@ -62,10 +62,6 @@ function AuthPage() {
         <p className="text-sm text-muted-foreground mb-4">
           {mode === "login" ? "Sign in to manage your plans." : "Sign up to access the admin panel."}
         </p>
-        <div className="mb-6 text-xs rounded-lg border border-primary/30 bg-primary/5 p-3 text-muted-foreground">
-          <span className="text-primary font-semibold">Owner:</span>
-          <span> owner@sparkhost.io / Sp4rkOwn3r#K9xq!2026 — change your email & password from the admin panel after signing in.</span>
-        </div>
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">Email</label>

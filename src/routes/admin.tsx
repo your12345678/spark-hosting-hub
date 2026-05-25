@@ -4,8 +4,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket, UserCog, Upload, Users, Crown, X } from "lucide-react";
-import { changeMainAdmin, listAdmins, grantAdmin, revokeAdminUser, setAdminMainFlag, changeUserPassword, updateOwnAccount } from "@/lib/admin.functions";
+import {
+  Plus, Trash2, Save, LogOut, Shield, Star, Eye, EyeOff, Rocket,
+  UserCog, Upload, Users, Crown, X, Link2, Settings2,
+} from "lucide-react";
+import {
+  changeMainAdmin, listAdmins, grantAdmin, revokeAdminUser, setAdminMainFlag,
+  changeUserPassword, updateOwnAccount, saveSiteSettings,
+} from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -39,6 +45,8 @@ type Plan = {
   is_active: boolean;
   is_featured: boolean;
 };
+
+type SiteSetting = { key: string; value: string; label: string };
 
 const CATEGORIES: Plan["category"][] = ["minecraft", "budget", "paid", "premium", "vps"];
 
@@ -77,7 +85,6 @@ function AdminPage() {
   const [editing, setEditing] = useState<Partial<Plan> | null>(null);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
-  const [revokeSelf, setRevokeSelf] = useState(false);
   const [changing, setChanging] = useState(false);
 
   useEffect(() => {
@@ -99,7 +106,6 @@ function AdminPage() {
     else setPlans((data ?? []) as any);
     setFetching(false);
   }
-
 
   async function save(p: Partial<Plan>) {
     const payload = {
@@ -139,14 +145,10 @@ function AdminPage() {
     e.preventDefault();
     setChanging(true);
     try {
-      const res = await changeAdminFn({ data: { email: newAdminEmail, password: newAdminPassword, revokeCaller: revokeSelf } });
+      const res = await changeAdminFn({ data: { email: newAdminEmail, password: newAdminPassword, revokeCaller: false } });
       toast.success(`Admin set to ${res.email}`);
       setNewAdminEmail("");
       setNewAdminPassword("");
-      if (revokeSelf) {
-        await supabase.auth.signOut();
-        navigate({ to: "/auth" });
-      }
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to change admin");
     } finally {
@@ -201,6 +203,7 @@ function AdminPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-6 py-10">
+        {/* Plans header */}
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
           <div>
             <div className="text-xs uppercase tracking-[0.3em] text-primary mb-2">Plan manager</div>
@@ -215,6 +218,7 @@ function AdminPage() {
           </button>
         </div>
 
+        {/* Category filter */}
         <div className="flex gap-2 mb-6 flex-wrap">
           {(["all", ...CATEGORIES] as const).map((c) => (
             <button
@@ -227,6 +231,7 @@ function AdminPage() {
           ))}
         </div>
 
+        {/* Plans grid */}
         {fetching ? (
           <div className="text-muted-foreground text-sm">Loading plans…</div>
         ) : (
@@ -260,6 +265,12 @@ function AdminPage() {
                   {p.bandwidth_tb != null && <li>Bandwidth: {p.bandwidth_tb} TB</li>}
                   {p.player_slots != null && <li>Slots: {p.player_slots}</li>}
                 </ul>
+                {p.cta_url && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-primary/70 truncate">
+                    <Link2 className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{p.cta_url}</span>
+                  </div>
+                )}
                 <div className="flex gap-2 mt-5">
                   <button onClick={() => setEditing(p)} className="flex-1 h-9 rounded-full text-xs font-semibold border border-border hover:border-primary">Edit</button>
                   <button onClick={() => remove(p.id)} className="h-9 px-3 rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10">
@@ -274,16 +285,21 @@ function AdminPage() {
           </div>
         )}
 
+        {/* Site link settings */}
+        {isAdmin && <SiteSettingsSection />}
+
+        {/* Owner account */}
         {isOwner && <OwnerSelfAccount currentEmail={user.email ?? ""} />}
 
+        {/* Change main admin */}
         {isOwner && (
-          <section className="mt-16 card-3d rounded-3xl p-8 max-w-2xl">
+          <section className="mt-10 card-3d rounded-3xl p-8 max-w-2xl">
             <div className="flex items-center gap-3 mb-2">
               <UserCog className="w-5 h-5 text-primary" />
               <h2 className="text-2xl font-bold">Change main admin</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
-              Create or promote a main admin account. Only you (owner) can do this. Your owner access is never affected.
+              Create or promote a main admin account. Only you (owner) can do this.
             </p>
             <form onSubmit={handleChangeAdmin} className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
@@ -311,6 +327,80 @@ function AdminPage() {
   );
 }
 
+/* ─── Site Settings Section ──────────────────────────────────────────────── */
+function SiteSettingsSection() {
+  const saveFn = useServerFn(saveSiteSettings);
+  const [settings, setSettings] = useState<SiteSetting[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("site_settings")
+      .select("key, value, label")
+      .then(({ data }) => {
+        if (data) setSettings(data as SiteSetting[]);
+      });
+  }, []);
+
+  function update(key: string, value: string) {
+    setSettings((prev) => prev.map((s) => s.key === key ? { ...s, value } : s));
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await saveFn({ data: { settings: settings.map((s) => ({ key: s.key, value: s.value })) } });
+      toast.success("Site links saved");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const labelMap: Record<string, string> = {
+    status_url: "Status page URL",
+    discord_url: "Discord invite URL",
+    terms_url: "Terms of Service URL",
+    privacy_url: "Privacy Policy URL",
+  };
+
+  return (
+    <section className="mt-16 card-3d rounded-3xl p-8 max-w-3xl">
+      <div className="flex items-center gap-3 mb-2">
+        <Settings2 className="w-5 h-5 text-primary" />
+        <h2 className="text-2xl font-bold">Site links</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-6">
+        Configure footer navigation links shown to all visitors. Leave blank to hide a link.
+      </p>
+      <form onSubmit={handleSave} className="space-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          {settings.map((s) => (
+            <div key={s.key}>
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {labelMap[s.key] ?? s.label ?? s.key}
+              </label>
+              <input
+                type="url"
+                value={s.value}
+                onChange={(e) => update(s.key, e.target.value)}
+                placeholder="https://…"
+                className={`${inputCls} mt-1`}
+              />
+            </div>
+          ))}
+        </div>
+        <button disabled={saving} className="h-11 px-6 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark inline-flex items-center gap-2 text-sm disabled:opacity-60">
+          <Save className="w-4 h-4" /> {saving ? "Saving…" : "Save links"}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+/* ─── Plan Editor ─────────────────────────────────────────────────────────── */
 function PlanEditor({
   initial, onClose, onSave,
 }: {
@@ -356,8 +446,19 @@ function PlanEditor({
           <Field label="Player slots"><input type="number" value={p.player_slots ?? ""} onChange={(e) => up("player_slots", e.target.value === "" ? null : Number(e.target.value))} className={inputCls} /></Field>
           <Field label="Location"><input value={p.location ?? ""} onChange={(e) => up("location", e.target.value)} className={inputCls} /></Field>
           <Field label="Badge"><input value={p.badge ?? ""} onChange={(e) => up("badge", e.target.value)} className={inputCls} placeholder="e.g. Popular" /></Field>
-          <Field label="CTA label"><input value={p.cta_label ?? ""} onChange={(e) => up("cta_label", e.target.value)} className={inputCls} /></Field>
-          <Field label="CTA URL"><input value={p.cta_url ?? ""} onChange={(e) => up("cta_url", e.target.value)} className={inputCls} placeholder="https://..." /></Field>
+          <Field label="CTA button label"><input value={p.cta_label ?? ""} onChange={(e) => up("cta_label", e.target.value)} className={inputCls} placeholder="Order now" /></Field>
+          <Field label="Order URL" full>
+            <input
+              type="url"
+              value={p.cta_url ?? ""}
+              onChange={(e) => up("cta_url", e.target.value)}
+              className={inputCls}
+              placeholder="https://billing.example.com/order?plan=..."
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Customers are redirected here when they click the order button on this plan.
+            </p>
+          </Field>
           <Field label="Features (one per line)" full>
             <textarea rows={5} value={featuresText} onChange={(e) => setFeaturesText(e.target.value)} className={`${inputCls} h-auto py-2`} />
           </Field>
@@ -382,7 +483,7 @@ function PlanEditor({
   );
 }
 
-const inputCls = "w-full h-10 px-3 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm";
+export const inputCls = "w-full h-10 px-3 rounded-lg bg-background border border-border focus:border-primary outline-none text-sm";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
@@ -438,6 +539,7 @@ function ImageUploader({ value, onChange }: { value: string | null; onChange: (u
   );
 }
 
+/* ─── Admins Section ──────────────────────────────────────────────────────── */
 type AdminRow = { user_id: string; email: string | null; is_main: boolean; is_owner: boolean; created_at: string };
 
 function AdminsSection({ currentUserId, isOwner }: { currentUserId: string; isOwner: boolean }) {
@@ -533,7 +635,7 @@ function AdminsSection({ currentUserId, isOwner }: { currentUserId: string; isOw
       <p className="text-sm text-muted-foreground mb-6">
         {iAmOwner
           ? "Grant admin access, promote main admins, and reset any admin's password."
-          : "As a main admin you can grant regular admin access. Only the owner can promote to main admin or reset passwords."}
+          : "As a main admin you can grant regular admin access."}
       </p>
 
       {iAmMain && (
@@ -579,14 +681,12 @@ function AdminsSection({ currentUserId, isOwner }: { currentUserId: string; isOw
                     <button
                       onClick={() => toggleMain(a.user_id, !a.is_main)}
                       className="h-8 px-3 rounded-full text-xs border border-border hover:border-primary inline-flex items-center gap-1"
-                      title={a.is_main ? "Demote to admin" : "Promote to main admin"}
                     >
                       <Crown className="w-3 h-3" /> {a.is_main ? "Demote" : "Promote"}
                     </button>
                     <button
                       onClick={() => handleRevoke(a.user_id)}
                       className="h-8 w-8 rounded-full border border-destructive/40 text-destructive hover:bg-destructive/10 grid place-items-center"
-                      title="Remove admin"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -622,17 +722,13 @@ function AdminsSection({ currentUserId, isOwner }: { currentUserId: string; isOw
   );
 }
 
-// ─── FIXED: OwnerSelfAccount ────────────────────────────────────────────────
-// Bug: after updateUserById changes the email server-side, Supabase invalidates
-// the old session token. Any subsequent server function call fails auth because
-// the middleware (requireSupabaseAuth) rejects the stale bearer token.
-// Fix: call refreshSession() after the update. If it fails (email change
-// invalidates the session), sign out gracefully and prompt re-login.
+/* ─── Owner Self Account ──────────────────────────────────────────────────── */
 function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
   const navigate = useNavigate();
   const updateFn = useServerFn(updateOwnAccount);
   const [email, setEmail] = useState(currentEmail);
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -641,6 +737,7 @@ function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
     const pwdChanged = password.length > 0;
     if (!emailChanged && !pwdChanged) { toast.error("Change email or password first"); return; }
     if (pwdChanged && password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (pwdChanged && password !== confirmPassword) { toast.error("Passwords do not match"); return; }
     setSaving(true);
     try {
       await updateFn({ data: {
@@ -648,13 +745,8 @@ function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
         ...(pwdChanged ? { password } : {}),
       } });
 
-      // Refresh the local session so the stored token matches the new credentials.
-      // Without this the old bearer token is rejected by requireSupabaseAuth on
-      // the very next server function call, producing "error updating user".
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
-        // Email change causes Supabase to invalidate the session entirely.
-        // Sign out cleanly and let the owner log in with their new credentials.
         await supabase.auth.signOut();
         toast.success("Credentials updated — please sign in again with your new details.");
         navigate({ to: "/auth" });
@@ -663,6 +755,7 @@ function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
 
       toast.success(emailChanged ? "Account updated — sign in with the new email next time" : "Password updated");
       setPassword("");
+      setConfirmPassword("");
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to update account");
     } finally {
@@ -676,19 +769,49 @@ function OwnerSelfAccount({ currentEmail }: { currentEmail: string }) {
         <Crown className="w-5 h-5 text-primary" />
         <h2 className="text-2xl font-bold">Your owner account</h2>
       </div>
-      <p className="text-sm text-muted-foreground mb-6">Owner credentials cannot be changed for security.</p>
-      <form className="space-y-4">
+      <p className="text-sm text-muted-foreground mb-6">
+        Update your login email and password. Leave password fields blank to keep the current password.
+      </p>
+      <form onSubmit={submit} className="space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
-          <div>
+          <div className="sm:col-span-2">
             <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Email</label>
-            <input type="email" disabled value={email} className={`${inputCls} mt-1 opacity-60 cursor-not-allowed`} />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={`${inputCls} mt-1`}
+              placeholder="owner@example.com"
+            />
           </div>
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Password</label>
-            <input type="password" disabled className={`${inputCls} mt-1 opacity-60 cursor-not-allowed`} placeholder="Cannot be changed" />
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">New password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${inputCls} mt-1`}
+              placeholder="Min 8 characters"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Confirm password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={`${inputCls} mt-1`}
+              placeholder="Repeat new password"
+            />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Main owner account is protected and cannot be modified.</p>
+        <button
+          type="submit"
+          disabled={saving}
+          className="h-11 px-6 rounded-full font-semibold bg-gradient-spark text-primary-foreground shadow-spark inline-flex items-center gap-2 text-sm disabled:opacity-60"
+        >
+          <Save className="w-4 h-4" /> {saving ? "Saving…" : "Update credentials"}
+        </button>
       </form>
     </section>
   );

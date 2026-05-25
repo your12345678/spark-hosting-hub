@@ -141,3 +141,21 @@ export const setAdminMainFlag = createServerFn({ method: "POST" })
     await setMainAdminFlag(data.userId, data.isMain);
     return { ok: true };
   });
+
+export const saveSiteSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      settings: z.array(z.object({ key: z.string(), value: z.string() })),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await isUserAdmin(context.userId))) throw new Error("Not authorized");
+    for (const s of data.settings) {
+      const { error } = await supabaseAdmin
+        .from("site_settings")
+        .upsert({ key: s.key, value: s.value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  });
